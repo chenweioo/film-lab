@@ -1,0 +1,2740 @@
+<!--
+  胶片模拟 Lab — Film Simulation Filter Camera
+  ==============================================
+
+  📱 如何用手机打开（不需要服务器）：
+  ───────────────────────────────────
+  • Android：微信/QQ 发文件到「文件传输助手」→ 用 Chrome 打开
+  • iOS：AirDrop 传到手机 → 在「文件」App 中点击 → 用 Safari 打开
+  • 通用：数据线复制到 Downloads → 文件管理器打开
+
+  🎞 工作原理：
+  ───────────
+  5 个内置胶片预设全部使用 GLSL 着色器实时计算，完全离线，
+  不依赖任何网络下载，选照片后即时生效。
+
+  如需外部 HaldCLUT：点击「+」卡片 → 从本地文件选取 PNG。
+  RawPedia 链接可在弹窗中找到（手动下载后导入）。
+
+  📡 无网络、100% 离线可用！
+  ──────────────────────────
+-->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>胶片模拟 Lab</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1e1812">
+  <meta name="description" content="用数字的方式，感受银盐的温度。基于 HaldCLUT 的胶片模拟滤镜相机。">
+
+  <style>
+    /* ========== CSS Reset & Base ========== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #1e1812;
+      --bg-card: #2a1f14;
+      --bg-card-hover: #342818;
+      --text: #f0e6d3;
+      --text-muted: #a09080;
+      --accent: #c4956a;
+      --accent-dim: #8b6b4a;
+      --error: #c05555;
+      --error-bg: #3a2020;
+      --border: #3a2a18;
+      --shadow: 0 4px 24px rgba(0,0,0,0.5);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --nav-height: 64px;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* ========== App Layout ========== */
+    #app {
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page.active { display: flex; flex-direction: column; }
+
+    /* ========== Typography ========== */
+    .serif {
+      font-family: Georgia, 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    /* ========== Home Page ========== */
+    #page-home {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .home-header {
+      text-align: center;
+      padding: 12px 0 4px;
+    }
+    .home-header h1 {
+      margin-bottom: 4px;
+    }
+    .home-header .tagline {
+      font-size: 0.8rem;
+      color: var(--accent-dim);
+      letter-spacing: 0.06em;
+    }
+
+    /* Preview Area */
+    #preview-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      max-height: 50vh;
+      background: #1a1510;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #gl-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #preview-placeholder.hidden {
+      opacity: 0;
+    }
+
+    .placeholder-icon {
+      width: 56px;
+      height: 56px;
+      opacity: 0.3;
+    }
+    .placeholder-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* Loading overlay on preview */
+    #preview-loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(26,21,16,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #preview-loading.active {
+      display: flex;
+    }
+
+    .film-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* Compare button */
+    #compare-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0;
+    }
+
+    #compare-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: none;
+    }
+    #compare-btn.visible { display: inline-flex; align-items: center; gap: 6px; }
+    #compare-btn:active {
+      background: var(--accent);
+      color: #1e1812;
+      border-color: var(--accent);
+      transform: scale(0.96);
+    }
+
+    /* Upload button */
+    #upload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #1e1812;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 28px;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(196,149,106,0.3);
+      transition: all 0.2s;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    #upload-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 8px rgba(196,149,106,0.2);
+      background: #d4a574;
+    }
+
+    .upload-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* Filter Strip */
+    .section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: 4px 4px 0;
+    }
+
+    #filter-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 4px 8px;
+      flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    #filter-strip::-webkit-scrollbar { display: none; }
+
+    .filter-card {
+      flex: 0 0 110px;
+      scroll-snap-align: start;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+      min-height: 120px;
+    }
+    .filter-card:active {
+      transform: scale(0.95);
+      background: var(--bg-card-hover);
+    }
+    .filter-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(196,149,106,0.25);
+      background: var(--bg-card-hover);
+    }
+    .filter-card.error {
+      opacity: 0.45;
+      border-color: var(--error-bg);
+      background: var(--error-bg);
+    }
+
+    /* Film perforations */
+    .filter-card::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 8px;
+      right: 8px;
+      height: 10px;
+      background: radial-gradient(circle 3px, var(--bg) 35%, transparent 35%);
+      background-size: 18px 10px;
+      background-repeat: repeat-x;
+      pointer-events: none;
+    }
+    .filter-card::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 8px;
+      right: 8px;
+      height: 10px;
+      background: radial-gradient(circle 3px, var(--bg) 35%, transparent 35%);
+      background-size: 18px 10px;
+      background-repeat: repeat-x;
+      pointer-events: none;
+    }
+
+    .filter-thumb {
+      width: 72px;
+      height: 48px;
+      border-radius: 3px;
+      background: #1e1812;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .filter-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .filter-thumb .thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    .filter-name {
+      font-size: 0.7rem;
+      text-align: center;
+      line-height: 1.3;
+      letter-spacing: 0.03em;
+      color: var(--text);
+    }
+    .filter-card.error .filter-name {
+      color: var(--error);
+    }
+
+    .filter-retry {
+      display: none;
+      font-size: 0.6rem;
+      color: var(--error);
+      text-align: center;
+    }
+    .filter-card.error .filter-retry {
+      display: block;
+    }
+
+    /* Add card */
+    .filter-card.add-card {
+      border-style: dashed;
+      border-color: var(--accent-dim);
+      justify-content: center;
+      opacity: 0.7;
+    }
+    .filter-card.add-card::before,
+    .filter-card.add-card::after { display: none; }
+    .filter-card.add-card .add-icon {
+      font-size: 2rem;
+      color: var(--accent-dim);
+      line-height: 1;
+    }
+    .filter-card.add-card .add-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    /* Save button */
+    /* Save bar */
+    #save-bar {
+      display: none;
+      flex-shrink: 0;
+    }
+    #save-bar.visible {
+      display: block;
+    }
+    #save-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: var(--accent);
+      color: #1e1812;
+      padding: 14px 28px;
+      border-radius: 14px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 18px rgba(196,149,106,0.3);
+    }
+    #save-btn:active {
+      background: #d4a574;
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(196,149,106,0.2);
+    }
+
+    /* ========== About Page ========== */
+    #page-about {
+      padding: 32px 24px;
+      gap: 24px;
+      align-items: center;
+    }
+    #page-about .about-logo {
+      font-size: 3rem;
+      opacity: 0.6;
+    }
+    #page-about .about-text {
+      text-align: center;
+      line-height: 1.8;
+      max-width: 320px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+    }
+    #page-about .about-text strong {
+      color: var(--accent);
+      font-weight: 400;
+    }
+    #page-about .about-credits {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+      line-height: 1.8;
+      letter-spacing: 0.03em;
+    }
+    #page-about .about-credits a {
+      color: var(--accent-dim);
+      text-decoration: none;
+    }
+
+    /* ========== Bottom Nav ========== */
+    #bottom-nav {
+      flex-shrink: 0;
+      min-height: var(--nav-height);
+      height: calc(var(--nav-height) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: rgba(26,20,16,0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+      font-size: 0.65rem;
+      letter-spacing: 0.04em;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-btn.active {
+      color: var(--accent);
+    }
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+      opacity: 0.8;
+    }
+    .nav-btn.active svg {
+      opacity: 1;
+    }
+
+    /* ========== Modal ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: #1e1710;
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px calc(24px + var(--safe-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-sheet h3 {
+      font-size: 1.1rem;
+      font-weight: 400;
+      text-align: center;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+
+    .modal-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .modal-input-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+    .modal-input-group input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-divider {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      position: relative;
+    }
+    .modal-divider::before,
+    .modal-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: var(--border);
+    }
+    .modal-divider::before { left: 0; }
+    .modal-divider::after { right: 0; }
+
+    .modal-file-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+    }
+    .modal-file-btn:active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .modal-manual-dl {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .manual-dl-title {
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+    }
+    .manual-dl-desc {
+      font-size: 0.65rem;
+      opacity: 0.7;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .manual-dl-link {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 5px 0;
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom: 1px solid var(--border);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .manual-dl-link:last-child { border-bottom: none; }
+    .manual-dl-link:active { color: var(--accent); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-actions button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 20px;
+      border: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .modal-actions button:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #1e1812;
+      font-weight: 600;
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border) !important;
+    }
+    .btn-load {
+      background: var(--accent-dim);
+      color: #fff;
+      font-size: 0.8rem;
+      padding: 8px 16px;
+      border-radius: 16px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.15s;
+    }
+    .btn-load:active {
+      transform: scale(0.96);
+      opacity: 0.8;
+    }
+    .btn-load:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ========== Toast ========== */
+    #toast {
+      position: fixed;
+      bottom: calc(var(--nav-height) + var(--safe-bottom) + 28px);
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      z-index: 300;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== Save Overlay ========== */
+    .save-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .save-overlay.open {
+      display: flex;
+    }
+    .save-overlay-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+    }
+    .save-dialog {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .save-instruction {
+      color: var(--accent);
+      font-size: 0.95rem;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    .save-image-wrap {
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      border: 2px solid var(--border);
+      background: #000;
+    }
+    .save-image-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .save-actions {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+    .save-actions .btn-primary,
+    .save-actions .btn-secondary {
+      flex: 1;
+      text-align: center;
+      padding: 14px;
+      border-radius: 28px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .save-actions .btn-primary {
+      background: var(--accent);
+      color: #1e1812;
+    }
+    .save-actions .btn-primary:active {
+      transform: scale(0.96);
+      background: #d4a574;
+    }
+    .save-actions .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .save-actions .btn-secondary:active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ========== Proxy config ========== */
+    #proxy-badge {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 50;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    #proxy-badge:active {
+      transform: scale(0.9);
+      color: var(--accent);
+    }
+    #proxy-badge.enabled {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ========== Responsive tweaks ========== */
+    @media (min-width: 480px) {
+      #preview-container {
+        max-height: 55vh;
+      }
+      .filter-card {
+        flex: 0 0 130px;
+      }
+    }
+    @media (min-width: 768px) {
+      #app {
+        max-width: 480px;
+        margin: 0 auto;
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+      #preview-container {
+        max-height: 45vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ====== Home Page ====== -->
+    <div id="page-home" class="page active">
+      <div class="home-header">
+        <h1 class="serif">胶片模拟 Lab</h1>
+        <p class="tagline serif">Film Simulation Laboratory</p>
+      </div>
+
+      <!-- Preview -->
+      <div id="preview-container">
+        <canvas id="gl-canvas"></canvas>
+        <div id="preview-placeholder">
+          <svg class="placeholder-icon" viewBox="0 0 56 56" fill="none">
+            <rect x="4" y="8" width="48" height="38" rx="5" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+            <circle cx="28" cy="27" r="10" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+            <circle cx="28" cy="27" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+            <rect x="16" y="48" width="24" height="3" rx="1.5" fill="currentColor" opacity="0.2"/>
+          </svg>
+          <p class="placeholder-text serif">选择一张照片开始</p>
+        </div>
+        <div id="preview-loading">
+          <div class="film-spinner"></div>
+          <p class="loading-text">正在加载滤镜…</p>
+        </div>
+      </div>
+
+      <!-- Compare bar -->
+      <div id="compare-bar">
+        <button id="compare-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 3h4v10H3V3zm6 0h4v10H9V3z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M1 6h14M1 10h14" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+          </svg>
+          长按预览对比原图
+        </button>
+      </div>
+
+      <!-- Upload -->
+      <input type="file" id="file-input" accept="image/*" style="display:none">
+      <button id="upload-btn">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity="0.6"/>
+          <path d="M3 16l5-5 3 3 4-4 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        从相册选取照片
+      </button>
+
+      <!-- Save bar — appears after photo selected, between upload and filters -->
+      <div id="save-bar">
+        <button id="save-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          保存图片到相册
+        </button>
+      </div>
+
+      <!-- Filter strip -->
+      <p class="section-label">胶片滤镜 / Film Filters</p>
+      <div id="filter-strip">
+        <!-- Cards injected by JS -->
+      </div>
+
+    </div>
+
+    <!-- ====== About Page ====== -->
+    <div id="page-about" class="page">
+      <div class="about-logo serif">📷</div>
+      <h1 class="serif" style="font-size:1.5rem;">胶片模拟 Lab</h1>
+      <p class="about-text serif">
+        用数字的方式，感受<strong>银盐的温度</strong>。<br><br>
+        LUT 资源来自 <strong>RawPedia</strong>，<br>
+        灵感源自 <strong>sunnyspeedstudio</strong> 的<br>
+        batch-film-simulation。
+      </p>
+      <div class="about-credits">
+        技术实现：WebGL HaldCLUT<br>
+        缓存：IndexedDB<br>
+        <br>
+        <a href="https://rawpedia.rawtherapee.com/" target="_blank" rel="noopener">
+          RawPedia 资源 →
+        </a>
+      </div>
+    </div>
+
+    <!-- ====== Bottom Nav ====== -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-page="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="9,22 9,12 15,12 15,22" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>首页</span>
+      </button>
+      <button class="nav-btn" data-page="about">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8" stroke-linecap="round"/>
+        </svg>
+        <span>关于</span>
+      </button>
+    </nav>
+
+    <!-- ====== Custom LUT Modal ====== -->
+    <div id="lut-modal" class="modal-overlay">
+      <div class="modal-sheet">
+        <h3 class="serif">添加自定义滤镜</h3>
+
+        <div class="modal-input-group">
+          <label>粘贴 HaldCLUT 图片 URL</label>
+          <div style="display:flex;gap:8px;">
+            <input type="url" id="lut-url-input" placeholder="https://example.com/hald-clut.png" style="flex:1;">
+            <button class="btn-load" id="lut-url-load">加载</button>
+          </div>
+        </div>
+
+        <div class="modal-divider">或</div>
+
+        <label class="modal-file-btn" for="lut-file-input">
+          📁 从本地文件选取 HaldCLUT 图片
+        </label>
+        <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+
+        <div class="modal-divider">备用方案（100% 可靠）</div>
+
+        <div class="modal-manual-dl">
+          <p class="manual-dl-title">📥 手动下载 LUT 后导入</p>
+          <p class="manual-dl-desc">长按下方链接下载图片 → 再用上方「📁 从本地文件选取」导入。第一次下载后自动缓存。</p>
+          <div class="manual-dl-links" id="manual-dl-links">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" id="lut-modal-close">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== Proxy config ====== -->
+    <div id="proxy-badge" class="enabled" title="CORS 代理：自动">⚙</div>
+
+    <!-- ====== Hidden thumbnail canvas ====== -->
+    <canvas id="thumb-canvas" width="160" height="120" style="display:none;"></canvas>
+
+    <!-- ====== Toast ====== -->
+    <div id="toast"></div>
+
+    <!-- ====== Save result modal ====== -->
+    <div id="save-overlay" class="save-overlay">
+      <div class="save-overlay-bg"></div>
+      <div class="save-dialog">
+        <p class="save-instruction serif">📷 长按图片保存到相册</p>
+        <div class="save-image-wrap">
+          <img id="save-result-img" alt="保存图片">
+        </div>
+        <div class="save-actions">
+          <button class="btn-primary" id="save-share-btn">📤 分享</button>
+          <button class="btn-secondary" id="save-close-btn">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ===================== POLYFILLS =====================
+    // canvas.toBlob (Safari < 14)
+    if (!HTMLCanvasElement.prototype.toBlob) {
+      HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+        const dataUrl = this.toDataURL(type, quality);
+        const binStr = atob(dataUrl.split(',')[1]);
+        const len = binStr.length;
+        const arr = new Uint8Array(len);
+        for (let i = 0; i < len; i++) arr[i] = binStr.charCodeAt(i);
+        callback(new Blob([arr], { type: type || 'image/png' }));
+      };
+    }
+
+    // ===================== CONSTANTS =====================
+    // Built-in film presets: pure GLSL, no download needed, instant.
+    // url is kept for optional manual download (available via "+" modal).
+    const FILTERS = [
+      { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
+      { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
+      { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
+      { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
+    ];
+
+    const MAX_IMAGE_DIM = 2048;
+    const DB_NAME = 'FilmLabDB';
+    const DB_VERSION = 2;
+    const STORE_LUTS = 'luts';
+    const STORE_CUSTOM = 'custom_filters';
+    const THUMB_W = 160;
+    const THUMB_H = 120;
+
+    // ===================== DOM REFS =====================
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    const els = {
+      pageHome: $('#page-home'),
+      pageAbout: $('#page-about'),
+      glCanvas: $('#gl-canvas'),
+      thumbCanvas: $('#thumb-canvas'),
+      previewContainer: $('#preview-container'),
+      placeholder: $('#preview-placeholder'),
+      previewLoading: $('#preview-loading'),
+      compareBtn: $('#compare-btn'),
+      uploadBtn: $('#upload-btn'),
+      fileInput: $('#file-input'),
+      filterStrip: $('#filter-strip'),
+      saveBar: $('#save-bar'),
+      saveBtn: $('#save-btn'),
+      bottomNav: $('#bottom-nav'),
+      navBtns: $$('.nav-btn'),
+      lutModal: $('#lut-modal'),
+      lutUrlInput: $('#lut-url-input'),
+      lutUrlLoad: $('#lut-url-load'),
+      lutFileInput: $('#lut-file-input'),
+      lutModalClose: $('#lut-modal-close'),
+      toast: $('#toast'),
+      proxyBadge: $('#proxy-badge'),
+      saveOverlay: $('#save-overlay'),
+      saveResultImg: $('#save-result-img'),
+      saveShareBtn: $('#save-share-btn'),
+      saveCloseBtn: $('#save-close-btn'),
+    };
+
+    // ===================== STATE =====================
+    let sourceImage = null;        // HTMLImageElement (resized)
+    let currentFilterId = null;
+    let currentClutTexture = null;
+    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=external CLUT
+    let useProxy = true;           // try CORS proxies when direct fetch fails
+    let customFilters = [];
+    let lutCache = {};            // in-memory fallback: url -> blob
+    let filterStates = {};        // id -> { loaded: bool, error: bool, thumbDataUrl: string|null }
+    let toastTimer = null;
+
+    // Initialize filter states
+    // Built-in presets (with preset field) are always "loaded" — instant GPU render
+    FILTERS.forEach(f => {
+      filterStates[f.id] = f.preset
+        ? { loaded: true, error: false, thumbDataUrl: 'preset' }
+        : { loaded: false, error: false, thumbDataUrl: null };
+    });
+
+    // ===================== INDEXEDDB =====================
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_LUTS)) {
+            db.createObjectStore(STORE_LUTS, { keyPath: 'url' });
+          }
+          if (!db.objectStoreNames.contains(STORE_CUSTOM)) {
+            db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    let dbPromise = openDB().catch(() => null);
+
+    async function dbGetLUT(url) {
+      const db = await dbPromise;
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_LUTS, 'readonly');
+        const store = tx.objectStore(STORE_LUTS);
+        const req = store.get(url);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function dbSetLUT(url, blob) {
+      const db = await dbPromise;
+      if (!db) { lutCache[url] = blob; return; }
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_LUTS, 'readwrite');
+        const store = tx.objectStore(STORE_LUTS);
+        store.put({ url, blob, timestamp: Date.now() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    }
+
+    async function dbGetCustomFilters() {
+      const db = await dbPromise;
+      if (!db) return [];
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_CUSTOM, 'readonly');
+        const store = tx.objectStore(STORE_CUSTOM);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    }
+
+    async function dbSetCustomFilter(id, data) {
+      const db = await dbPromise;
+      if (!db) return;
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_CUSTOM, 'readwrite');
+        const store = tx.objectStore(STORE_CUSTOM);
+        store.put({ id, ...data, timestamp: Date.now() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    }
+
+    async function dbDeleteCustomFilter(id) {
+      const db = await dbPromise;
+      if (!db) return;
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_CUSTOM, 'readwrite');
+        tx.objectStore(STORE_CUSTOM).delete(id);
+        tx.oncomplete = () => resolve();
+      });
+    }
+
+    // ===================== WEBGL RENDERER =====================
+    const VERTEX_SHADER = `
+      attribute vec2 a_position;
+      attribute vec2 a_texCoord;
+      varying vec2 v_texCoord;
+      void main() {
+        gl_Position = vec4(a_position, 0.0, 1.0);
+        v_texCoord = a_texCoord;
+      }
+    `;
+
+    const FRAGMENT_SHADER = `
+      precision highp float;
+      varying vec2 v_texCoord;
+      uniform sampler2D u_source;
+      uniform sampler2D u_clut;
+      uniform float u_clutSize;
+      uniform float u_mode; // 0=passthrough, 1-5=builtin presets, 6=external CLUT
+
+      // ---- HaldCLUT lookup (mode 6) ----
+      vec3 sampleClut(vec3 rgb) {
+        float totalPixels = u_clutSize * u_clutSize;
+        float levels = floor(pow(totalPixels, 1.0/3.0) + 0.5);
+        vec3 idx = rgb * (levels - 1.0);
+        float r = floor(idx.r + 0.5);
+        float g = floor(idx.g + 0.5);
+        float b = floor(idx.b + 0.5);
+        r = clamp(r, 0.0, levels - 1.0);
+        g = clamp(g, 0.0, levels - 1.0);
+        b = clamp(b, 0.0, levels - 1.0);
+        float index1d = r * levels * levels + g * levels + b;
+        float x = mod(index1d, u_clutSize);
+        float y = floor(index1d / u_clutSize + 1e-5);
+        y = min(y, u_clutSize - 1.0);
+        vec2 uv = vec2((x + 0.5) / u_clutSize, (y + 0.5) / u_clutSize);
+        return texture2D(u_clut, uv).rgb;
+      }
+
+      // ---- Film simulation functions ----
+      vec3 ascCDL(vec3 c, vec3 slope, vec3 offset, vec3 power) {
+        c = c * slope + offset;
+        c = clamp(c, 0.0, 1.0);
+        c.r = pow(c.r, power.r);
+        c.g = pow(c.g, power.g);
+        c.b = pow(c.b, power.b);
+        return c;
+      }
+      vec3 saturate(vec3 c, float s) {
+        float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        return mix(vec3(lum), c, s);
+      }
+      vec3 contrast(vec3 c, float amt) {
+        return (c - 0.5) * amt + 0.5;
+      }
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+
+      vec3 applyPreset(vec3 c, float fid, vec2 uv) {
+        int id = int(fid);
+        if (id == 1) {
+          // Fuji Provia 100F — natural, slight punch
+          c = ascCDL(c, vec3(1.08,1.07,1.08), vec3(-0.02,-0.02,-0.02), vec3(1.0,1.0,1.0));
+          c = saturate(c, 1.15);
+          c = contrast(c, 1.06);
+          // Warm shadow tint
+          c.r = mix(c.r, c.r*1.03, smoothstep(0.0, 0.35, 1.0-dot(c,vec3(0.33))));
+          c.b = mix(c.b, c.b*0.97, smoothstep(0.0, 0.35, 1.0-dot(c,vec3(0.33))));
+        } else if (id == 2) {
+          // Fuji Velvia 50 — vivid, deep shadows, boosted greens
+          c = ascCDL(c, vec3(1.22,1.30,1.20), vec3(-0.06,-0.05,-0.06), vec3(1.08,1.08,1.08));
+          c = saturate(c, 1.40);
+          c = contrast(c, 1.22);
+          c.g = mix(c.g, c.g*1.08, step(0.3, c.g)*step(c.g, 0.8));
+        } else if (id == 3) {
+          // Kodak Portra 160 NC — low contrast, warm, lifted blacks
+          c = ascCDL(c, vec3(0.92,0.92,0.88), vec3(0.04,0.03,0.06), vec3(0.92,0.92,0.95));
+          c = saturate(c, 0.82);
+          c = contrast(c, 0.88);
+          // Warm highlight cast
+          float hi = smoothstep(0.55, 1.0, dot(c,vec3(0.33)));
+          c.r = mix(c.r, c.r*1.04, hi);
+          c.b = mix(c.b, c.b*0.94, hi);
+        } else if (id == 4) {
+          // Kodak Ektar 100 — punchy, vivid, cool shadows
+          c = ascCDL(c, vec3(1.25,1.14,1.18), vec3(-0.05,-0.03,-0.04), vec3(1.02,1.0,1.0));
+          c = saturate(c, 1.30);
+          c = contrast(c, 1.18);
+          // Cool shadow push
+          float sh = smoothstep(0.0, 0.3, 1.0-dot(c,vec3(0.33)));
+          c.b = mix(c.b, c.b*1.06, sh);
+        } else if (id == 5) {
+          // Ilford HP5 Plus 400 — B&W with grain
+          float lum = dot(c, vec3(0.30, 0.59, 0.11));
+          lum = (lum - 0.5) * 1.35 + 0.5; // strong contrast
+          // Organic grain
+          float n = hash(uv * 1024.0 + fract(uv*137.0)) + hash(uv * 2048.0 - fract(uv*79.0)*0.5);
+          n = (n - 0.5) * 0.055;
+          // Grain stronger in midtones
+          n *= 1.0 - abs(lum - 0.5) * 1.2;
+          lum = clamp(lum + n, 0.0, 1.0);
+          c = vec3(lum);
+        }
+        return clamp(c, 0.0, 1.0);
+      }
+
+      void main() {
+        vec4 color = texture2D(u_source, v_texCoord);
+        int mode = int(u_mode + 0.5);
+        if (mode >= 1 && mode <= 5) {
+          vec3 filtered = applyPreset(color.rgb, u_mode, v_texCoord);
+          gl_FragColor = vec4(filtered, color.a);
+        } else if (mode == 6) {
+          vec3 filtered = sampleClut(color.rgb);
+          gl_FragColor = vec4(filtered, color.a);
+        } else {
+          gl_FragColor = color;
+        }
+      }
+    `;
+
+    let gl = null;
+    let glProgram = null;
+    let glSourceTex = null;
+    let glClutTex = null;
+    let glPositionBuffer = null;
+    let glTexCoordBuffer = null;
+    let glQuadVerts = null; // computed for aspect ratio
+
+    function compileShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const info = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error('Shader compile: ' + info);
+      }
+      return shader;
+    }
+
+    function initWebGL() {
+      const canvas = els.glCanvas;
+      // Try WebGL 2 first, fall back to WebGL 1
+      gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true, alpha: false })
+        || canvas.getContext('webgl', { preserveDrawingBuffer: true, alpha: false })
+        || canvas.getContext('experimental-webgl', { preserveDrawingBuffer: true, alpha: false });
+
+      if (!gl) {
+        showToast('您的浏览器不支持 WebGL');
+        return false;
+      }
+
+      // Compile shaders
+      const vs = compileShader(gl.VERTEX_SHADER, VERTEX_SHADER);
+      const fs = compileShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
+      glProgram = gl.createProgram();
+      gl.attachShader(glProgram, vs);
+      gl.attachShader(glProgram, fs);
+      gl.linkProgram(glProgram);
+      if (!gl.getProgramParameter(glProgram, gl.LINK_STATUS)) {
+        throw new Error('Program link: ' + gl.getProgramInfoLog(glProgram));
+      }
+
+      // Buffers
+      glPositionBuffer = gl.createBuffer();
+      glTexCoordBuffer = gl.createBuffer();
+
+      // Full-screen quad texture coords (static)
+      const texCoords = new Float32Array([0,1, 1,1, 0,0, 1,0]);
+      gl.bindBuffer(gl.ARRAY_BUFFER, glTexCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+
+      // Default quad vertices (will be updated per image aspect ratio)
+      glQuadVerts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+
+      // 1x1 dummy texture — bound to u_clut when not using external CLUT
+      // Required: all declared sampler uniforms must be texture-complete
+      glDummyTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, glDummyTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        new Uint8Array([128, 128, 128, 255]));
+
+      // Initial canvas size
+      resizeCanvas();
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+      // WebGL context loss / restore (critical on mobile where GPU may be reclaimed)
+      els.glCanvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault(); // allow restore attempt
+        console.warn('WebGL context lost');
+      }, false);
+      els.glCanvas.addEventListener('webglcontextrestored', () => {
+        console.log('WebGL context restored');
+        // Re-upload textures and re-render
+        if (sourceImage) {
+          setSourceTexture(sourceImage);
+          if (glClutTex) {
+            // CLUT texture might need reloading — re-trigger the current filter
+            const filt = [...FILTERS, ...customFilters].find(f => f.id === currentFilterId);
+            if (filt) {
+              if (filt.preset) {
+                render(filt.preset);
+              } else if (filt.isCustom) {
+                loadLUTImage(filt.url).then(result => {
+                  setClutTexture(result.img, result.blobUrl);
+                  render(6);
+                }).catch(() => { render(0); });
+              }
+            }
+          } else {
+            render(0);
+          }
+        }
+      }, false);
+
+      return true;
+    }
+
+    function resizeCanvas() {
+      const container = els.previewContainer;
+      const rect = container.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = rect.width * dpr;
+      const h = rect.height * dpr;
+
+      if (els.glCanvas.width !== w || els.glCanvas.height !== h) {
+        els.glCanvas.width = w;
+        els.glCanvas.height = h;
+        if (gl) {
+          gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+      }
+    }
+
+    function clearCanvas() {
+      if (!gl) return;
+      gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    function updateQuadVerts(imgW, imgH) {
+      // Compute quad vertices to maintain aspect ratio (contain mode)
+      const canvas = els.glCanvas;
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const imgAspect = imgW / imgH;
+      const canvasAspect = cw / ch;
+
+      let sx, sy; // scale factors
+      if (imgAspect > canvasAspect) {
+        sx = 1.0;
+        sy = canvasAspect / imgAspect;
+      } else {
+        sx = imgAspect / canvasAspect;
+        sy = 1.0;
+      }
+
+      glQuadVerts[0] = -sx; glQuadVerts[1] = -sy; // bottom-left
+      glQuadVerts[2] =  sx; glQuadVerts[3] = -sy; // bottom-right
+      glQuadVerts[4] = -sx; glQuadVerts[5] =  sy; // top-left
+      glQuadVerts[6] =  sx; glQuadVerts[7] =  sy; // top-right
+    }
+
+    function createTexture(img) {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      return tex;
+    }
+
+    function deleteTexture(tex) {
+      if (tex) {
+        gl.deleteTexture(tex);
+      }
+    }
+
+    let glDummyTex = null;        // 1x1 texture bound to u_clut when not in mode 6
+
+    function render(mode) {
+      // mode: 0=passthrough, 1-5=builtin presets, 6=external CLUT
+      if (!gl || !glSourceTex) return;
+      if (!glProgram) return;
+
+      gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(glProgram);
+
+      const uModeLoc = gl.getUniformLocation(glProgram, 'u_mode');
+      const uSourceLoc = gl.getUniformLocation(glProgram, 'u_source');
+      const uClutLoc = gl.getUniformLocation(glProgram, 'u_clut');
+      const uClutSizeLoc = gl.getUniformLocation(glProgram, 'u_clutSize');
+
+      // Texture unit 0: source image (always used)
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, glSourceTex);
+      gl.uniform1i(uSourceLoc, 0);
+
+      // Texture unit 1: CLUT or dummy (must always be bound!)
+      gl.activeTexture(gl.TEXTURE1);
+      if (mode === 6 && glClutTex) {
+        gl.bindTexture(gl.TEXTURE_2D, glClutTex);
+        gl.uniform1f(uClutSizeLoc, currentClutSize || 1728.0);
+      } else {
+        gl.bindTexture(gl.TEXTURE_2D, glDummyTex);
+        gl.uniform1f(uClutSizeLoc, 1728.0);
+      }
+      gl.uniform1i(uClutLoc, 1);
+
+      // Set mode — MUST use uniform1f (shader uniform is float, not int)
+      gl.uniform1f(uModeLoc, mode);
+
+      // Vertex positions
+      const posLoc = gl.getAttribLocation(glProgram, 'a_position');
+      gl.bindBuffer(gl.ARRAY_BUFFER, glPositionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, glQuadVerts, gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(posLoc);
+      gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+      // Tex coords
+      const texLoc = gl.getAttribLocation(glProgram, 'a_texCoord');
+      gl.bindBuffer(gl.ARRAY_BUFFER, glTexCoordBuffer);
+      gl.enableVertexAttribArray(texLoc);
+      gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    let currentClutSize = 1728.0;
+    let currentClutBlobUrl = null; // track for revocation on switch
+
+    function setClutTexture(img, blobUrl) {
+      // Revoke previous CLUT blob URL to avoid memory leaks
+      if (currentClutBlobUrl) {
+        URL.revokeObjectURL(currentClutBlobUrl);
+        currentClutBlobUrl = null;
+      }
+      // Delete old texture
+      deleteTexture(glClutTex);
+      glClutTex = createTexture(img);
+      currentClutSize = img.naturalWidth;
+      // Track new blob URL for later revocation
+      if (blobUrl) {
+        currentClutBlobUrl = blobUrl;
+      }
+    }
+
+    function setSourceTexture(img) {
+      deleteTexture(glSourceTex);
+      glSourceTex = createTexture(img);
+      updateQuadVerts(img.naturalWidth, img.naturalHeight);
+    }
+
+    // ===================== THUMBNAIL RENDERER =====================
+    let thumbGL = null;
+    let thumbProgram = null;
+    let thumbSourceTex = null;
+    let thumbPositionBuffer = null;
+    let thumbTexCoordBuffer = null;
+
+    function compileShaderForGL(ctx, type, source) {
+      const shader = ctx.createShader(type);
+      ctx.shaderSource(shader, source);
+      ctx.compileShader(shader);
+      if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
+        const info = ctx.getShaderInfoLog(shader);
+        ctx.deleteShader(shader);
+        throw new Error('Shader compile: ' + info);
+      }
+      return shader;
+    }
+
+    function initThumbGL() {
+      const canvas = els.thumbCanvas;
+      thumbGL = canvas.getContext('webgl2', { preserveDrawingBuffer: true, alpha: false })
+        || canvas.getContext('webgl', { preserveDrawingBuffer: true, alpha: false })
+        || canvas.getContext('experimental-webgl', { preserveDrawingBuffer: true, alpha: false });
+
+      if (!thumbGL) return false;
+
+      const tg = thumbGL;
+      const vs = compileShaderForGL(tg, tg.VERTEX_SHADER, VERTEX_SHADER);
+      const fs = compileShaderForGL(tg, tg.FRAGMENT_SHADER, FRAGMENT_SHADER);
+      thumbProgram = tg.createProgram();
+      tg.attachShader(thumbProgram, vs);
+      tg.attachShader(thumbProgram, fs);
+      tg.linkProgram(thumbProgram);
+
+      thumbPositionBuffer = tg.createBuffer();
+      thumbTexCoordBuffer = tg.createBuffer();
+
+      const texCoords = new Float32Array([0,1, 1,1, 0,0, 1,0]);
+      tg.bindBuffer(tg.ARRAY_BUFFER, thumbTexCoordBuffer);
+      tg.bufferData(tg.ARRAY_BUFFER, texCoords, tg.STATIC_DRAW);
+
+      // Full-screen quad for thumbnail
+      const verts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+      tg.bindBuffer(tg.ARRAY_BUFFER, thumbPositionBuffer);
+      tg.bufferData(tg.ARRAY_BUFFER, verts, tg.STATIC_DRAW);
+
+      tg.viewport(0, 0, THUMB_W, THUMB_H);
+      return true;
+    }
+
+    function renderThumbnail(sourceImg, clutImg, clutSize) {
+      if (!thumbGL) return null;
+      const tg = thumbGL;
+
+      // Create source texture
+      const srcTex = tg.createTexture();
+      tg.bindTexture(tg.TEXTURE_2D, srcTex);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_WRAP_S, tg.CLAMP_TO_EDGE);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_WRAP_T, tg.CLAMP_TO_EDGE);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_MIN_FILTER, tg.LINEAR);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_MAG_FILTER, tg.LINEAR);
+      tg.texImage2D(tg.TEXTURE_2D, 0, tg.RGBA, tg.RGBA, tg.UNSIGNED_BYTE, sourceImg);
+
+      // Create CLUT texture
+      const clutTex = tg.createTexture();
+      tg.bindTexture(tg.TEXTURE_2D, clutTex);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_WRAP_S, tg.CLAMP_TO_EDGE);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_WRAP_T, tg.CLAMP_TO_EDGE);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_MIN_FILTER, tg.LINEAR);
+      tg.texParameteri(tg.TEXTURE_2D, tg.TEXTURE_MAG_FILTER, tg.LINEAR);
+      tg.texImage2D(tg.TEXTURE_2D, 0, tg.RGBA, tg.RGBA, tg.UNSIGNED_BYTE, clutImg);
+
+      tg.clearColor(0.102, 0.078, 0.063, 1.0);
+      tg.clear(tg.COLOR_BUFFER_BIT);
+      tg.useProgram(thumbProgram);
+
+      const uSourceLoc = tg.getUniformLocation(thumbProgram, 'u_source');
+      const uClutLoc = tg.getUniformLocation(thumbProgram, 'u_clut');
+      const uClutSizeLoc = tg.getUniformLocation(thumbProgram, 'u_clutSize');
+      const uModeLoc = tg.getUniformLocation(thumbProgram, 'u_mode');
+
+      tg.activeTexture(tg.TEXTURE0);
+      tg.bindTexture(tg.TEXTURE_2D, srcTex);
+      tg.uniform1i(uSourceLoc, 0);
+
+      tg.activeTexture(tg.TEXTURE1);
+      tg.bindTexture(tg.TEXTURE_2D, clutTex);
+      tg.uniform1i(uClutLoc, 1);
+      tg.uniform1f(uClutSizeLoc, clutSize);
+      tg.uniform1f(uModeLoc, 6.0);
+
+      const posLoc = tg.getAttribLocation(thumbProgram, 'a_position');
+      tg.bindBuffer(tg.ARRAY_BUFFER, thumbPositionBuffer);
+      tg.enableVertexAttribArray(posLoc);
+      tg.vertexAttribPointer(posLoc, 2, tg.FLOAT, false, 0, 0);
+
+      const texLoc = tg.getAttribLocation(thumbProgram, 'a_texCoord');
+      tg.bindBuffer(tg.ARRAY_BUFFER, thumbTexCoordBuffer);
+      tg.enableVertexAttribArray(texLoc);
+      tg.vertexAttribPointer(texLoc, 2, tg.FLOAT, false, 0, 0);
+
+      tg.drawArrays(tg.TRIANGLE_STRIP, 0, 4);
+
+      const dataUrl = els.thumbCanvas.toDataURL('image/jpeg', 0.7);
+
+      // Cleanup
+      tg.deleteTexture(srcTex);
+      tg.deleteTexture(clutTex);
+
+      return dataUrl;
+    }
+
+    // ===================== LUT LOADER =====================
+
+    // CORS proxies tried in order. RawPedia lacks CORS headers, so a proxy
+    // is required for the first download. Once cached in IndexedDB as a blob,
+    // the image is served same-origin and WebGL works without any proxy.
+    const CORS_PROXIES = [
+      { name: 'corsproxy.io',    fn: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
+      { name: 'allorigins #1',   fn: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+      { name: 'codetabs',        fn: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+      { name: 'allorigins #2',   fn: (u) => 'https://cors-proxy.htmldriven.com/?url=' + encodeURIComponent(u) },
+      { name: 'cloudflare',      fn: (u) => 'https://cors.eu.org/' + encodeURIComponent(u) },
+      { name: 'workers',         fn: (u) => 'https://cors.caseyend.com/' + encodeURIComponent(u) },
+    ];
+
+    // Safari polyfill for AbortSignal.timeout
+    function abortSignalTimeout(ms) {
+      if (AbortSignal.timeout) {
+        try { return AbortSignal.timeout(ms); } catch(e) {}
+      }
+      const ctrl = new AbortController();
+      setTimeout(() => { try { ctrl.abort(); } catch(e) {} }, ms);
+      return ctrl.signal;
+    }
+
+    // Load LUT image through a CORS proxy using an <img> element.
+    // Returns a CORS-clean HTMLImageElement ready for WebGL.
+    function loadImageViaProxy(lutUrl, proxyDef, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const proxyUrl = proxyDef.fn(lutUrl);
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // critical: tells browser to request CORS
+
+        const timer = setTimeout(() => {
+          img.src = ''; // cancel load
+          reject(new Error(`timeout (${timeoutMs}ms)`));
+        }, timeoutMs);
+
+        img.onload = () => {
+          clearTimeout(timer);
+          // Verify we got a real image (not an error page)
+          if (img.naturalWidth < 64 || img.naturalHeight < 64) {
+            reject(new Error('response too small (not a valid LUT image)'));
+            return;
+          }
+          resolve(img);
+        };
+
+        img.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error('image load failed'));
+        };
+
+        img.src = proxyUrl;
+      });
+    }
+
+    // Try loading via direct <img crossOrigin> (works for CORS-enabled servers)
+    function loadImageDirect(lutUrl, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        const timer = setTimeout(() => {
+          img.src = '';
+          reject(new Error(`direct timeout (${timeoutMs}ms)`));
+        }, timeoutMs);
+
+        img.onload = () => {
+          clearTimeout(timer);
+          if (img.naturalWidth < 64 || img.naturalHeight < 64) {
+            reject(new Error('direct response not a valid LUT'));
+            return;
+          }
+          resolve(img);
+        };
+
+        img.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error('direct load failed (no CORS on server)'));
+        };
+
+        img.src = lutUrl;
+      });
+    }
+
+    async function downloadLUT(url) {
+      // Strategy:
+      // 1. Try direct <img crossOrigin> (works if server has CORS, rare for RawPedia)
+      // 2. Try each CORS proxy in sequence via <img crossOrigin>
+      // 3. All fail → throw with detailed diagnostics
+      // Each proxy gets up to 3 attempts (mobile networks are flaky)
+
+      const errors = [];
+
+      // --- Step 1: direct (1 attempt, fast fail if no CORS) ---
+      try {
+        const img = await loadImageDirect(url, 6000);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        return { blob, img, clean: true, source: 'direct' };
+      } catch (e) {
+        errors.push('direct: ' + e.message);
+      }
+
+      // --- Step 2: CORS proxies (1 attempt each, move to next on fail) ---
+      if (useProxy) {
+        for (const proxyDef of CORS_PROXIES) {
+          try {
+            const img = await loadImageViaProxy(url, proxyDef, 12000);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            return { blob, img, clean: true, source: proxyDef.name };
+          } catch (e) {
+            errors.push(proxyDef.name + ': ' + e.message);
+          }
+        }
+      }
+
+      // All strategies exhausted
+      throw new Error(errors.join(' | '));
+    }
+
+    async function loadLUTImage(url) {
+      // 1. IndexedDB cache hit → instant
+      const cached = await dbGetLUT(url);
+      if (cached && cached.blob && cached.blob.size > 1024) {
+        const blobUrl = URL.createObjectURL(cached.blob);
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve({ img, clean: true, blobUrl });
+          img.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error('缓存图片解码失败'));
+          };
+          img.src = blobUrl;
+        });
+      }
+
+      // 2. In-memory cache
+      if (lutCache[url]) {
+        const blobUrl = URL.createObjectURL(lutCache[url]);
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve({ img, clean: true, blobUrl });
+          img.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error('内存缓存解码失败'));
+          };
+          img.src = blobUrl;
+        });
+      }
+
+      // 3. Download via proxy pipeline
+      const result = await downloadLUT(url);
+
+      // 4. Cache for next time
+      if (result.blob && result.blob.size > 1024) {
+        try { await dbSetLUT(url, result.blob); } catch (e) {}
+        lutCache[url] = result.blob;
+      }
+
+      // 5. Return the image (either from canvas conversion or direct)
+      if (result.img) {
+        return { img: result.img, clean: true, blobUrl: null };
+      }
+
+      // 6. Fallback: create blob URL from blob
+      const blobUrl = URL.createObjectURL(result.blob);
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ img, clean: true, blobUrl });
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error('下载的图片数据无法解码'));
+        };
+        img.src = blobUrl;
+      });
+    }
+
+    // ===================== IMAGE RESIZE =====================
+    function resizeImage(img) {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (Math.max(w, h) <= MAX_IMAGE_DIM) return img;
+
+      let nw, nh;
+      if (w > h) {
+        nw = MAX_IMAGE_DIM;
+        nh = Math.round(h * MAX_IMAGE_DIM / w);
+      } else {
+        nh = MAX_IMAGE_DIM;
+        nw = Math.round(w * MAX_IMAGE_DIM / h);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = nw;
+      canvas.height = nh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, nw, nh);
+
+      const resized = new Image();
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          resized.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(resized);
+          };
+          resized.src = url;
+        }, 'image/jpeg', 0.92);
+      });
+    }
+
+    // ===================== UI HELPERS =====================
+    function showToast(msg) {
+      const t = els.toast;
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function showPreviewLoading() {
+      els.previewLoading.classList.add('active');
+    }
+
+    function hidePreviewLoading() {
+      els.previewLoading.classList.remove('active');
+    }
+
+    function updateFilterCardUI(filterId) {
+      const state = filterStates[filterId];
+      const card = document.querySelector(`.filter-card[data-filter="${filterId}"]`);
+      if (!card) return;
+
+      card.classList.remove('error', 'active');
+      if (state.error) {
+        card.classList.add('error');
+      }
+      if (filterId === currentFilterId) {
+        card.classList.add('active');
+      }
+
+      // Update thumbnail
+      const thumbDiv = card.querySelector('.filter-thumb');
+      if (thumbDiv && state.thumbDataUrl) {
+        if (state.thumbDataUrl === 'preset') {
+          thumbDiv.innerHTML = '<div class="thumb-placeholder" style="color:#c4956a;opacity:0.7;">🎞</div>';
+        } else {
+          let imgEl = thumbDiv.querySelector('img');
+          if (!imgEl) {
+            imgEl = document.createElement('img');
+            thumbDiv.innerHTML = '';
+            thumbDiv.appendChild(imgEl);
+          }
+          imgEl.src = state.thumbDataUrl;
+        }
+      }
+    }
+
+    function renderFilterCards() {
+      const strip = els.filterStrip;
+      strip.innerHTML = '';
+
+      const allFilters = [...FILTERS, ...customFilters];
+
+      allFilters.forEach((f, i) => {
+        const state = filterStates[f.id] || { loaded: false, error: false, thumbDataUrl: null };
+        const card = document.createElement('div');
+        card.className = 'filter-card';
+        card.setAttribute('data-filter', f.id);
+        if (state.error) card.classList.add('error');
+        if (f.id === currentFilterId) card.classList.add('active');
+
+        const thumbContent = (state.thumbDataUrl && state.thumbDataUrl !== 'preset')
+          ? `<img src="${state.thumbDataUrl}" alt="">`
+          : `<div class="thumb-placeholder">🎞</div>`;
+
+        card.innerHTML = `
+          <div class="filter-thumb">${thumbContent}</div>
+          <span class="filter-name">${f.name}</span>
+          <span class="filter-retry">加载失败<br>点击重试</span>
+        `;
+
+        card.addEventListener('click', () => {
+          if (card.classList.contains('error')) {
+            // Retry
+            const fs = filterStates[f.id];
+            if (fs) { fs.error = false; fs.loaded = false; }
+            updateFilterCardUI(f.id);
+            selectFilter(f);
+          } else {
+            selectFilter(f);
+          }
+        });
+
+        strip.appendChild(card);
+      });
+
+      // Add "+" card
+      const addCard = document.createElement('div');
+      addCard.className = 'filter-card add-card';
+      addCard.innerHTML = `
+        <span class="add-icon">+</span>
+        <span class="add-label">自定义<br>滤镜</span>
+      `;
+      addCard.addEventListener('click', openLUTModal);
+      strip.appendChild(addCard);
+    }
+
+    // ===================== CORE ACTIONS =====================
+
+    // Capture a small thumbnail from the main WebGL canvas after filter render
+    function capturePreviewThumbnail(filterId) {
+      if (!gl || !glSourceTex) return;
+      try {
+        // Read back at reduced resolution for speed
+        const srcW = els.glCanvas.width;
+        const srcH = els.glCanvas.height;
+        if (srcW < 10 || srcH < 10) return;
+
+        // Use a 2D canvas to downscale the WebGL output
+        const thumbCanvas = document.createElement('canvas');
+        const tw = 160, th = 120;
+        thumbCanvas.width = tw;
+        thumbCanvas.height = th;
+        const ctx = thumbCanvas.getContext('2d');
+
+        // Draw the WebGL canvas scaled down
+        ctx.drawImage(els.glCanvas, 0, 0, tw, th);
+
+        const dataUrl = thumbCanvas.toDataURL('image/jpeg', 0.65);
+
+        // Store and update UI
+        const state = filterStates[filterId];
+        if (state) {
+          state.thumbDataUrl = dataUrl;
+          updateFilterCardUI(filterId);
+        }
+      } catch (e) {
+        // Thumbnail capture is non-critical
+      }
+    }
+
+    function selectFilter(filter) {
+      currentFilterId = filter.id;
+      const state = filterStates[filter.id] || { loaded: false, error: false };
+      filterStates[filter.id] = state;
+      state.loaded = true;
+      state.error = false;
+
+      renderFilterCards();
+
+      if (!sourceImage) {
+        return;
+      }
+
+      // Built-in preset: render instantly (GPU shader, no download)
+      if (filter.preset) {
+        currentMode = filter.preset;
+        render(currentMode);
+        updateFilterCardUI(filter.id);
+
+        // Generate thumbnail preview from rendered canvas
+        capturePreviewThumbnail(filter.id);
+
+        track('apply', filter.name);
+        return;
+      }
+
+      // Custom filter: try to load external CLUT
+      if (filter.url && filter.isCustom) {
+        showPreviewLoading();
+        loadLUTImage(filter.url).then(result => {
+          state.loaded = true;
+          state.error = false;
+          setClutTexture(result.img, result.blobUrl);
+          currentMode = 6;
+          render(6);
+          hidePreviewLoading();
+          updateFilterCardUI(filter.id);
+          capturePreviewThumbnail(filter.id);
+          track('apply', filter.name);
+        }).catch(err => {
+          state.loaded = false;
+          state.error = true;
+          hidePreviewLoading();
+          currentMode = 0;
+          render(0);
+          updateFilterCardUI(filter.id);
+          console.error('Custom LUT load error:', err);
+          showToast('自定义滤镜加载失败，点击重试');
+        });
+      }
+    }
+
+    async function handleFileSelect(file) {
+      if (!file || !file.type.match(/image\//)) {
+        showToast('请选择图片文件');
+        return;
+      }
+
+      // Read file
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+
+      // Load image
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error('Image load failed'));
+        i.src = dataUrl;
+      });
+
+      // Resize if needed
+      sourceImage = await resizeImage(img);
+
+      // Upload to WebGL
+      setSourceTexture(sourceImage);
+      els.placeholder.classList.add('hidden');
+      els.compareBtn.classList.add('visible');
+      els.saveBar.classList.add('visible');
+
+      // If a filter was previously selected, re-apply it
+      if (currentFilterId && currentMode !== 0) {
+        render(currentMode);
+      } else {
+        render(0);
+        // Auto-load first filter
+        if (FILTERS.length > 0) {
+          selectFilter(FILTERS[0]);
+        }
+      }
+
+      // Generate all filter thumbnails in background (delayed for smooth UX)
+      setTimeout(() => generateAllThumbnails(), 300);
+    }
+
+    async function generateAllThumbnails() {
+      if (!sourceImage) return;
+
+      const allFilters = [...FILTERS, ...customFilters];
+
+      for (const filter of allFilters) {
+        const state = filterStates[filter.id];
+        if (!state || !state.loaded) continue;
+        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') continue;
+
+        // Built-in preset: render GPU filter into main canvas and capture
+        if (filter.preset && !filter.isCustom) {
+          try {
+            const savedMode = currentMode;
+            render(filter.preset);
+            // Brief pause for GPU to flush
+            await new Promise(r => setTimeout(r, 60));
+            capturePreviewThumbnail(filter.id);
+            // Restore previous render
+            if (savedMode !== filter.preset) {
+              render(savedMode);
+            }
+          } catch (e) {
+            state.thumbDataUrl = null; // fallback to placeholder
+          }
+          continue;
+        }
+
+        // Custom filter with external CLUT: use thumbnail WebGL context
+        try {
+          if (!thumbGL && !initThumbGL()) continue;
+          const result = await loadLUTImage(filter.url);
+          const thumb = renderThumbnail(sourceImage, result.img, result.img.naturalWidth);
+          if (thumb) {
+            state.thumbDataUrl = thumb;
+            updateFilterCardUI(filter.id);
+          }
+          if (result.blobUrl) URL.revokeObjectURL(result.blobUrl);
+        } catch (e) {
+          // Thumbnail generation is best-effort
+        }
+      }
+
+      renderFilterCards();
+    }
+
+    let savedBlob = null;  // kept for share button
+
+    async function saveImage() {
+      if (!glSourceTex) {
+        showToast('请先选择照片');
+        return;
+      }
+
+      try {
+        // 1. Render current filter to canvas
+        render(currentMode);
+        await new Promise(r => setTimeout(r, 150));
+
+        // 2. Extract from WebGL canvas
+        const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
+        if (!dataUrl || dataUrl === 'data:,') {
+          showToast('导出失败，请重试');
+          return;
+        }
+
+        // 3. Show in full-screen overlay — user long-presses to save
+        els.saveResultImg.src = dataUrl;
+        els.saveOverlay.classList.add('open');
+
+        // 4. Prepare blob for share button
+        try {
+          const resp = await fetch(dataUrl);
+          savedBlob = await resp.blob();
+        } catch (e) {
+          savedBlob = null;
+        }
+
+        track('save', getCurrentFilterName());
+
+      } catch (e) {
+        console.error('Save error:', e);
+        showToast('保存失败，请重试');
+      }
+    }
+
+    function closeSaveOverlay() {
+      els.saveOverlay.classList.remove('open');
+      // Don't revoke — dataUrl is managed by browser
+      savedBlob = null;
+    }
+
+    async function shareSavedImage() {
+      if (!savedBlob || savedBlob.size < 100) {
+        // Re-grab from canvas
+        try {
+          const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
+          const resp = await fetch(dataUrl);
+          savedBlob = await resp.blob();
+        } catch (e) {
+          showToast('分享失败，请长按图片保存');
+          return;
+        }
+      }
+
+      const filename = 'film-sim-' + Date.now() + '.jpg';
+      const file = new File([savedBlob], filename, { type: 'image/jpeg' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          showToast('已分享');
+          return;
+        } catch (e) {
+          // User cancelled — fall through
+          if (e.name !== 'AbortError') {
+            console.warn('Share error:', e);
+          }
+        }
+      }
+
+      // Fallback for Android: trigger download link
+      const url = URL.createObjectURL(savedBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('图片已下载');
+    }
+
+    function getCurrentFilterName() {
+      return [...FILTERS, ...customFilters].find(f => f.id === currentFilterId)?.name || '';
+    }
+
+    function triggerDownload(url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'film-sim-' + Date.now() + '.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('图片已下载');
+    }
+
+    function toggleCompare(show) {
+      if (show) {
+        render(0); // passthrough
+      } else {
+        render(currentMode);
+      }
+    }
+
+    // ===================== CUSTOM LUT =====================
+    function openLUTModal() {
+      els.lutModal.classList.add('open');
+      els.lutUrlInput.value = '';
+      els.lutUrlInput.focus();
+
+      // Populate manual download links for all filters
+      const linksContainer = document.getElementById('manual-dl-links');
+      if (linksContainer) {
+        linksContainer.innerHTML = [...FILTERS, ...customFilters].map(f =>
+          `<a class="manual-dl-link" href="${f.url}" target="_blank" rel="noopener" download>
+            📥 ${f.name}
+          </a>`
+        ).join('');
+      }
+    }
+
+    function closeLUTModal() {
+      els.lutModal.classList.remove('open');
+    }
+
+    async function handleCustomLUTUrl() {
+      const url = els.lutUrlInput.value.trim();
+      if (!url) {
+        showToast('请输入 URL');
+        return;
+      }
+
+      // Basic validation
+      try { new URL(url); } catch (e) {
+        showToast('无效的 URL');
+        return;
+      }
+
+      els.lutUrlLoad.disabled = true;
+      els.lutUrlLoad.textContent = '加载中…';
+
+      try {
+        const result = await loadLUTImage(url);
+        const img = result.img;
+
+        // Validate: should be square and reasonable size
+        if (img.naturalWidth < 64 || img.naturalWidth > 4096) {
+          showToast('HaldCLUT 尺寸应在 64-4096px 之间');
+          els.lutUrlLoad.disabled = false;
+          els.lutUrlLoad.textContent = '加载';
+          return;
+        }
+
+        const name = extractFilterName(url);
+        const id = 'custom-' + Date.now();
+
+        // Save metadata to IndexedDB (LUT blob already cached by loadLUTImage)
+        await dbSetCustomFilter(id, { name, url });
+
+        // Add to runtime list
+        const customFilter = { id, name, url, isCustom: true };
+        customFilters.push(customFilter);
+        filterStates[id] = { loaded: true, error: false, thumbDataUrl: null };
+
+        // If source loaded, generate thumbnail
+        if (sourceImage && thumbGL) {
+          try {
+            const thumb = renderThumbnail(sourceImage, img, img.naturalWidth);
+            if (thumb) filterStates[id].thumbDataUrl = thumb;
+          } catch (e) {}
+        }
+
+        closeLUTModal();
+        renderFilterCards();
+        showToast('自定义滤镜已添加');
+
+        // Select it
+        selectFilter(customFilter);
+
+      } catch (e) {
+        showToast('加载失败：' + e.message);
+      }
+
+      els.lutUrlLoad.disabled = false;
+      els.lutUrlLoad.textContent = '加载';
+    }
+
+    function extractFilterName(url) {
+      try {
+        const path = new URL(url).pathname;
+        const filename = path.split('/').pop().replace(/\.[^.]+$/, '');
+        return decodeURIComponent(filename)
+          .replace(/[_-]/g, ' ')
+          .replace(/Hald.?CLUT/i, '')
+          .replace(/\s+/g, ' ')
+          .trim() || '自定义滤镜';
+      } catch (e) {
+        return '自定义滤镜';
+      }
+    }
+
+    async function handleCustomLUTFile(file) {
+      if (!file || !file.type.match(/image\//)) {
+        showToast('请选择图片文件');
+        return;
+      }
+
+      try {
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+
+        const img = await new Promise((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = () => reject(new Error('Image load failed'));
+          i.src = dataUrl;
+        });
+
+        if (img.naturalWidth < 64 || img.naturalWidth > 4096) {
+          showToast('HaldCLUT 尺寸应在 64-4096px 之间');
+          return;
+        }
+
+        // Store blob in IndexedDB
+        const blob = await (await fetch(dataUrl)).blob();
+        const fakeUrl = 'local://' + file.name;
+        await dbSetLUT(fakeUrl, blob);
+        lutCache[fakeUrl] = blob;
+
+        const name = file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim() || '自定义滤镜';
+        const id = 'custom-' + Date.now();
+
+        await dbSetCustomFilter(id, {
+          name,
+          url: fakeUrl,
+          blobUrl: null,
+        });
+
+        const customFilter = { id, name, url: fakeUrl, isCustom: true };
+        customFilters.push(customFilter);
+        filterStates[id] = { loaded: true, error: false, thumbDataUrl: null };
+
+        closeLUTModal();
+        renderFilterCards();
+        showToast('自定义滤镜已添加');
+        selectFilter(customFilter);
+
+      } catch (e) {
+        showToast('加载失败：' + e.message);
+      }
+    }
+
+    // ===================== ANALYTICS =====================
+    function track(action, filterName) {
+      try {
+        const data = JSON.stringify({ action, filter: filterName || 'none', timestamp: Date.now() });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('https://httpbin.org/post', new Blob([data], { type: 'application/json' }));
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    }
+
+    // ===================== PAGE NAVIGATION =====================
+    function switchPage(page) {
+      els.pageHome.classList.toggle('active', page === 'home');
+      els.pageAbout.classList.toggle('active', page === 'about');
+
+      els.navBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.page === page);
+      });
+
+      if (page === 'home') {
+        // Re-render after page change (WebGL canvas may have been resized)
+        setTimeout(() => {
+          resizeCanvas();
+          if (glSourceTex) render(currentMode);
+        }, 100);
+      }
+    }
+
+    // ===================== PROXY CONFIG =====================
+    function cycleProxy() {
+      useProxy = !useProxy;
+      const badge = els.proxyBadge;
+      if (useProxy) {
+        badge.classList.add('enabled');
+        badge.title = '代理：自动（6个代理依次尝试）';
+        showToast('代理：自动（6个代理）✓');
+      } else {
+        badge.classList.remove('enabled');
+        badge.title = 'CORS 代理：关闭（仅直连）';
+        showToast('代理：关闭（仅直连）');
+      }
+    }
+
+    // ===================== EVENT BINDINGS =====================
+    els.uploadBtn.addEventListener('click', () => {
+      els.fileInput.click();
+    });
+
+    els.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleFileSelect(file);
+      els.fileInput.value = ''; // allow re-select
+    });
+
+    els.saveBtn.addEventListener('click', saveImage);
+
+    // Save overlay: close & share
+    els.saveCloseBtn.addEventListener('click', closeSaveOverlay);
+    els.saveShareBtn.addEventListener('click', shareSavedImage);
+    els.saveOverlay.addEventListener('click', (e) => {
+      // Close if user clicks the dark background (not the dialog)
+      if (e.target === els.saveOverlay || e.target.classList.contains('save-overlay-bg')) {
+        closeSaveOverlay();
+      }
+    });
+
+    // Compare: long-press / click to toggle
+    let compareActive = false;
+    els.previewContainer.addEventListener('pointerdown', (e) => {
+      if (currentMode === 0 || !glSourceTex) return;
+      compareActive = true;
+      toggleCompare(true);
+      e.preventDefault();
+    });
+    els.previewContainer.addEventListener('pointerup', () => {
+      if (compareActive) {
+        compareActive = false;
+        toggleCompare(false);
+      }
+    });
+    els.previewContainer.addEventListener('pointerleave', () => {
+      if (compareActive) {
+        compareActive = false;
+        toggleCompare(false);
+      }
+    });
+    els.previewContainer.addEventListener('pointercancel', () => {
+      if (compareActive) {
+        compareActive = false;
+        toggleCompare(false);
+      }
+    });
+
+    // Also click toggle for accessibility
+    els.compareBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (currentMode === 0 || !glSourceTex) return;
+      compareActive = true;
+      toggleCompare(true);
+    });
+    els.compareBtn.addEventListener('pointerup', () => {
+      if (compareActive) {
+        compareActive = false;
+        toggleCompare(false);
+      }
+    });
+    els.compareBtn.addEventListener('pointerleave', () => {
+      if (compareActive) {
+        compareActive = false;
+        toggleCompare(false);
+      }
+    });
+
+    // Nav
+    els.navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchPage(btn.dataset.page);
+      });
+    });
+
+    // LUT Modal
+    els.lutUrlLoad.addEventListener('click', handleCustomLUTUrl);
+    els.lutUrlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleCustomLUTUrl();
+    });
+    els.lutFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleCustomLUTFile(file);
+      els.lutFileInput.value = '';
+    });
+    els.lutModalClose.addEventListener('click', closeLUTModal);
+    els.lutModal.addEventListener('click', (e) => {
+      if (e.target === els.lutModal) closeLUTModal();
+    });
+
+    // Proxy badge
+    els.proxyBadge.addEventListener('click', cycleProxy);
+
+    // Resize handling
+    let resizeDebounce;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeDebounce);
+      resizeDebounce = setTimeout(() => {
+        resizeCanvas();
+        if (glSourceTex && gl) render(currentMode);
+      }, 200);
+    });
+
+    // Prevent zoom on double-tap
+    document.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    // ===================== PWA REGISTRATION =====================
+    function registerPWA() {
+      // Service workers require HTTPS or localhost — skip on file://
+      const isFileProtocol = location.protocol === 'file:';
+      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+      // Always inject manifest (works anywhere)
+      const manifest = {
+        name: '胶片模拟 Lab',
+        short_name: '胶片Lab',
+        description: '用数字的方式，感受银盐的温度',
+        start_url: location.href.split('?')[0].split('#')[0],
+        display: 'standalone',
+        background_color: '#1e1812',
+        theme_color: '#1e1812',
+        orientation: 'any',
+        icons: [
+          {
+            src: 'data:image/svg+xml,' + encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">' +
+              '<rect width="192" height="192" rx="32" fill="#1e1812"/>' +
+              '<rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/>' +
+              '<circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/>' +
+              '<circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/>' +
+              '<rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/>' +
+              '<text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text>' +
+              '</svg>'
+            ),
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          }
+        ]
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+
+      // Service worker only for HTTP(S) origins
+      if (isFileProtocol) {
+        console.log('📁 file:// mode — PWA install not available, all other features work');
+        return;
+      }
+
+      // On localhost: only register if user manually opens via http://
+      if (!('serviceWorker' in navigator)) return;
+
+      const swCode = `
+        const CACHE = 'film-lab-v2';
+        self.addEventListener('install', (e) => {
+          e.waitUntil(
+            caches.open(CACHE).then(cache => cache.add(self.location.href).catch(() => {}))
+          );
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', (e) => {
+          e.waitUntil(self.clients.claim());
+        });
+        self.addEventListener('fetch', (e) => {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.match(e.request).then(cached => {
+              const fetched = fetch(e.request).then(resp => {
+                if (resp.ok) {
+                  caches.open(CACHE).then(cache => cache.put(e.request, resp.clone()));
+                }
+                return resp;
+              }).catch(() => cached);
+              return cached || fetched;
+            })
+          );
+        });
+      `;
+
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+
+      navigator.serviceWorker.register(swUrl, { scope: '/' })
+        .then(() => console.log('PWA registered'))
+        .catch((e) => console.log('SW register skipped:', e.message));
+    }
+
+    // ===================== INIT =====================
+    async function init() {
+      // Initialize IndexedDB
+      try {
+        dbPromise = openDB();
+        await dbPromise;
+      } catch (e) {
+        console.warn('IndexedDB not available, using in-memory cache');
+        dbPromise = null;
+      }
+
+      // Load custom filters from IndexedDB
+      const savedCustom = await dbGetCustomFilters();
+      customFilters = savedCustom.map(cf => ({
+        id: cf.id,
+        name: cf.name,
+        url: cf.url,
+        isCustom: true
+      }));
+      customFilters.forEach(cf => {
+        filterStates[cf.id] = { loaded: false, error: false, thumbDataUrl: null };
+      });
+
+      // Init WebGL
+      resizeCanvas();
+      if (!initWebGL()) {
+        showToast('WebGL 初始化失败');
+        return;
+      }
+
+      // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
+      try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
+
+      // Render filter cards
+      renderFilterCards();
+
+      // Register PWA
+      registerPWA();
+
+      // Initial canvas clear — render background color even without source image
+      clearCanvas();
+
+      console.log('胶片模拟 Lab 已就绪');
+      console.log('协议:', location.protocol === 'file:' ? 'file://（离线模式）' : location.protocol);
+      console.log('滤镜数:', FILTERS.length + customFilters.length);
+      console.log('WebGL:', gl ? 'OK' : 'FAIL');
+      console.log('IndexedDB:', (await dbPromise) ? 'OK' : 'Fallback');
+      console.log('代理:', useProxy ? '自动（直连+多代理回退）' : '关闭');
+      if (location.protocol === 'file:') {
+        console.log('💡 PWA 安装仅在 http:// 下可用，其他功能无影响');
+      }
+    }
+
+    init().catch(console.error);
+
+  })();
+  </script>
+</body>
+</html>
