@@ -1665,18 +1665,22 @@
 
     function create3DLUTTexture(cubeData) {
       const { size, data } = cubeData;
+      // pixelStorei(UNPACK_ALIGNMENT, 1) + RGBA: works on ALL GPUs without padding issues
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
-      // Use UNSIGNED_BYTE for maximum compatibility (WebGL 1 + mobile).
-      // 256 levels per channel → <0.4% error for 33³ LUT, invisible to the eye.
-      const bytes = new Uint8Array(data.length);
-      for (let i = 0; i < data.length; i++) {
-        bytes[i] = Math.round(Math.max(0, Math.min(1, data[i])) * 255);
+      const pixels = new Uint8Array(size * size * size * 4); // RGBA per voxel
+      for (let i = 0; i < data.length / 3; i++) {
+        const idx = i * 3;
+        pixels[i * 4]     = Math.round(Math.max(0, Math.min(1, data[idx]))   * 255);
+        pixels[i * 4 + 1] = Math.round(Math.max(0, Math.min(1, data[idx+1])) * 255);
+        pixels[i * 4 + 2] = Math.round(Math.max(0, Math.min(1, data[idx+2])) * 255);
+        pixels[i * 4 + 3] = 255;
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, size, size * size, 0, gl.RGB, gl.UNSIGNED_BYTE, bytes);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size * size, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
       return { tex, size };
     }
 
