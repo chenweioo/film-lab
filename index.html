@@ -1665,13 +1665,18 @@
 
     function create3DLUTTexture(cubeData) {
       const { size, data } = cubeData;
-      gl.getExtension('OES_texture_float');
       const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      // Use UNSIGNED_BYTE for maximum compatibility (WebGL 1 + mobile).
+      // 256 levels per channel → <0.4% error for 33³ LUT, invisible to the eye.
+      const bytes = new Uint8Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        bytes[i] = Math.round(Math.max(0, Math.min(1, data[i])) * 255);
+      }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, size, size * size, 0, gl.RGB, gl.FLOAT, data);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, size, size * size, 0, gl.RGB, gl.UNSIGNED_BYTE, bytes);
       return { tex, size };
     }
 
