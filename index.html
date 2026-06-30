@@ -1365,16 +1365,18 @@
       }
 
       // Trilinear 3D LUT from 2D texture (mode 8)
+      // .cube data order: B fastest, then G, then R slowest.
+      // 2D texture layout: x=B, y=G+R*N (matches linear file order).
       vec3 sample3DLUT(vec3 rgb) {
         float N = u_lut3dSize;
+        float rC = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float gC = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
         float bC = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
-        float slice = floor(bC); float fB = bC - slice;
-        float row = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
-        float col = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
-        float x = (col + 0.5) / N;
-        float y0 = (slice * N + row + 0.5) / (N * N);
-        float y1 = ((slice + 1.0) * N + row + 0.5) / (N * N);
-        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fB);
+        float rSlice = floor(rC); float fracR = rC - rSlice;
+        float x = (bC + 0.5) / N;  // B varies fastest → x-axis
+        float y0 = (rSlice * N + gC + 0.5) / (N * N);
+        float y1 = ((rSlice + 1.0) * N + gC + 0.5) / (N * N);
+        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
       }
 
       // Parameterized preset from uniforms (mode >= 7)
