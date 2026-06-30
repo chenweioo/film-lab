@@ -450,39 +450,16 @@
     }
 
     /* ========== About Page ========== */
-    #page-about {
-      padding: 32px 24px;
-      gap: 24px;
-      align-items: center;
-    }
-    #page-about .about-logo {
-      font-size: 3rem;
-      opacity: 0.6;
-    }
-    #page-about .about-text {
-      text-align: center;
-      line-height: 1.8;
-      max-width: 320px;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      letter-spacing: 0.04em;
-    }
-    #page-about .about-text strong {
-      color: var(--accent);
-      font-weight: 400;
-    }
-    #page-about .about-credits {
-      text-align: center;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      opacity: 0.6;
-      line-height: 1.8;
-      letter-spacing: 0.03em;
-    }
-    #page-about .about-credits a {
-      color: var(--accent-dim);
-      text-decoration: none;
-    }
+    #page-about { padding: 48px 32px; gap: 24px; align-items: center; justify-content: center; }
+    #page-about .about-logo { font-size: 2.6rem; opacity: 0.35; align-self: center; }
+    #page-about .about-tagline { font-size: 2rem; line-height: 1.6; color: var(--text); text-align: center; max-width: 300px; align-self: center; }
+    #page-about .about-tagline strong.about-highlight { color: var(--accent); font-weight: 700; font-style: italic; letter-spacing: 0.08em; font-family: Georgia, 'Noto Serif SC', 'SimSun', serif; }
+    .about-divider { width: 36px; height: 2px; background: var(--accent); opacity: 0.3; border-radius: 1px; align-self: center; }
+    .about-creator { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; width: 100%; max-width: 260px; align-self: center; }
+    .about-creator-name { font-size: 1rem; color: var(--accent); font-weight: 700; letter-spacing: 0.06em; text-align: left; width: 100%; }
+    .about-creator-bio { font-size: 0.82rem; color: var(--text-muted); line-height: 1.9; letter-spacing: 0.04em; text-align: left; width: 100%; }
+    .about-creator-contact { font-size: 0.78rem; color: var(--accent-dim); letter-spacing: 0.04em; line-height: 1.8; text-align: left; width: 100%; }
+    #page-about .about-credits { text-align: center; font-size: 0.6rem; color: var(--text-muted); opacity: 0.4; line-height: 1.8; letter-spacing: 0.03em; margin-top: 12px; padding-bottom: 20px; }
 
     /* ========== Bottom Nav ========== */
     #bottom-nav {
@@ -630,41 +607,21 @@
       color: var(--accent);
     }
 
-    .modal-manual-dl {
-      background: var(--bg);
-      border-radius: var(--radius-sm);
-      padding: 12px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      max-height: 180px;
-      overflow-y: auto;
+    .film-lib-label { color: var(--accent-dim); font-size: 0.7rem; text-align: center; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .film-lib-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+      max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2px 2px 4px;
     }
-    .manual-dl-title {
-      color: var(--accent);
-      font-weight: 600;
-      margin-bottom: 4px;
-      font-size: 0.78rem;
+    .film-lib-card {
+      background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-sm);
+      padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.15s;
+      font-size: 0.66rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.3;
     }
-    .manual-dl-desc {
-      font-size: 0.65rem;
-      opacity: 0.7;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-    .manual-dl-link {
-      display: block;
-      color: var(--text);
-      text-decoration: none;
-      padding: 5px 0;
-      font-size: 0.68rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      border-bottom: 1px solid var(--border);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .manual-dl-link:last-child { border-bottom: none; }
-    .manual-dl-link:active { color: var(--accent); }
+    .film-lib-card:active { transform: scale(0.96); }
+    .film-lib-card.selected { border-color: var(--accent); background: #3a2818; }
+    .film-lib-card.added { border-color: var(--accent-dim); background: #2a2218; opacity: 0.7; cursor: default; pointer-events: none; }
+    .film-lib-card.added::after { content: ' ✓'; color: var(--accent); font-size: 0.6rem; }
+    #btn-confirm-add:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .modal-actions {
       display: flex;
@@ -943,20 +900,18 @@
     <!-- ====== About Page ====== -->
     <div id="page-about" class="page">
       <div class="about-logo serif">📷</div>
-      <h1 class="serif" style="font-size:1.5rem;">胶片模拟 Lab</h1>
-      <p class="about-text serif">
-        用数字的方式，感受<strong>银盐的温度</strong>。<br><br>
-        LUT 资源来自 <strong>RawPedia</strong>，<br>
-        灵感源自 <strong>sunnyspeedstudio</strong> 的<br>
-        batch-film-simulation。
-      </p>
+      <h1 class="serif about-tagline">
+        用数字的方式，<br>感受<strong class="about-highlight">银盐的温度</strong>。
+      </h1>
+      <div class="about-divider"></div>
+      <div class="about-creator">
+        <p class="about-creator-name">创作者：阿伟</p>
+        <p class="about-creator-bio">一名摄影爱好者，<br>也是一位数字胶片探索者，<br>尝试用最简单的方式和最低的成本<br>实现胶片模拟。</p>
+        <p class="about-creator-contact">联系与合作：15832241535</p>
+        <p class="about-creator-contact">建议与反馈（微信）：aweihuilaile</p>
+      </div>
       <div class="about-credits">
-        技术实现：WebGL HaldCLUT<br>
-        缓存：IndexedDB<br>
-        <br>
-        <a href="https://rawpedia.rawtherapee.com/" target="_blank" rel="noopener">
-          RawPedia 资源 →
-        </a>
+        胶片 LUT 资源来自 RawPedia，<br>灵感源自 sunnyspeedstudio 的 batch-film-simulation。
       </div>
     </div>
 
@@ -979,10 +934,17 @@
       </button>
     </nav>
 
-    <!-- ====== Custom LUT Modal ====== -->
+    <!-- ====== More Filters Modal ====== -->
     <div id="lut-modal" class="modal-overlay">
-      <div class="modal-sheet">
-        <h3 class="serif">添加自定义滤镜</h3>
+      <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
+        <h3 class="serif">选择更多滤镜</h3>
+
+        <!-- Film library grid -->
+        <p class="film-lib-label">🎞 胶片库（点击选择，可多选）</p>
+        <div class="film-lib-grid" id="film-library-grid"></div>
+        <div class="modal-actions"><button class="btn-primary" id="btn-confirm-add" disabled>确定添加（已选 0 个）</button></div>
+
+        <div class="modal-divider">或手动添加</div>
 
         <div class="modal-input-group">
           <label>粘贴 HaldCLUT 图片 URL</label>
@@ -998,16 +960,6 @@
           📁 从本地文件选取 HaldCLUT 图片
         </label>
         <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
-
-        <div class="modal-divider">备用方案（100% 可靠）</div>
-
-        <div class="modal-manual-dl">
-          <p class="manual-dl-title">📥 手动下载 LUT 后导入</p>
-          <p class="manual-dl-desc">长按下方链接下载图片 → 再用上方「📁 从本地文件选取」导入。第一次下载后自动缓存。</p>
-          <div class="manual-dl-links" id="manual-dl-links">
-            <!-- Populated by JS -->
-          </div>
-        </div>
 
         <div class="modal-actions">
           <button class="btn-secondary" id="lut-modal-close">取消</button>
@@ -1068,6 +1020,53 @@
       { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
     ];
 
+    // Film Library — all GPU shader presets, zero download, instant
+    const FILM_LIBRARY = [
+      { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
+      { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
+      { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
+      { name:'富士 Pro Neg Hi',   params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
+      { name:'富士 Pro Neg Std',  params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
+      { name:'富士 Pro 400H',     params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
+      { name:'富士 Superia 100',  params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
+      { name:'富士 Superia 400',  params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
+      { name:'富士 Superia 800',  params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
+      { name:'富士 Superia 1600', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
+      { name:'柯达 Portra 160 VC',params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
+      { name:'柯达 Portra 400 NC',params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
+      { name:'柯达 Portra 400 UC',params:[0.95,0.93,0.92, 0.02,0.02,0.04, 0.95,0.94,0.95, 1.25,0.92, 0, 0.02,0] },
+      { name:'柯达 Portra 400 VC',params:[0.94,0.93,0.91, 0.02,0.01,0.03, 0.95,0.94,0.95, 1.15,0.90, 0, 0.02,0] },
+      { name:'柯达 Portra 800',   params:[1.02,1.0,1.0, 0.01,0.01,0.01, 1.0,0.99,0.99, 0.95,0.95, 0, 0.01,0] },
+      { name:'柯达 Ektachrome 64',params:[1.15,1.13,1.17, -0.03,-0.02,-0.04, 1.01,1.01,1.01, 1.15,1.12, 0, 0,-0.03] },
+      { name:'柯达 Ektachrome 100',params:[1.20,1.16,1.20, -0.04,-0.03,-0.04, 1.02,1.01,1.01, 1.25,1.15, 0, 0,0] },
+      { name:'柯达 Ektachrome 100 VS',params:[1.24,1.18,1.24, -0.05,-0.03,-0.05, 1.03,1.02,1.02, 1.45,1.18, 0, 0,-0.01] },
+      { name:'柯达 Gold 100',     params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
+      { name:'柯达 Gold 200',     params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
+      { name:'柯达 Max 400',      params:[1.12,1.10,1.08, -0.03,-0.02,-0.02, 1.01,1.0,1.0, 1.08,1.12, 0, 0.02,0] },
+      { name:'柯达 T-Max 100',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
+      { name:'柯达 T-Max 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
+      { name:'柯达 Tri-X 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
+      { name:'伊尔福 Delta 100',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
+      { name:'伊尔福 Delta 400',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
+      { name:'伊尔福 Delta 3200',  params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
+      { name:'伊尔福 FP4 Plus 125',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
+      { name:'伊尔福 Pan F Plus 50',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
+      { name:'爱克发 Optima 100',  params:[1.02,1.02,1.0, 0.01,0.01,0.01, 0.98,0.98,0.99, 1.05,0.95, 0, 0.02,0] },
+      { name:'爱克发 Optima 400',  params:[1.05,1.04,1.02, 0.0,0.0,0.0, 0.99,0.99,0.99, 1.08,1.0, 0, 0.02,0] },
+      { name:'爱克发 Ultra Color', params:[1.18,1.14,1.16, -0.04,-0.03,-0.04, 1.02,1.02,1.02, 1.55,1.18, 0, 0,0] },
+      { name:'爱克发 Vista 100',   params:[1.03,1.03,1.01, 0.0,0.0,0.0, 1.0,1.0,1.0, 1.15,1.0, 0, 0,0] },
+      { name:'爱克发 Vista 200',   params:[1.05,1.04,1.02, -0.01,-0.01,0.0, 1.0,1.0,1.0, 1.20,1.03, 0, 0,0] },
+      { name:'爱克发 Vista 400',   params:[1.08,1.06,1.04, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 1.22,1.08, 0, 0,0] },
+      { name:'爱克发 Vista 800',   params:[1.14,1.10,1.08, -0.04,-0.03,-0.03, 1.02,1.01,1.01, 1.08,1.14, 0, 0.01,0] },
+      { name:'宝丽来 Polachrome',  params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
+      { name:'富士 FP-100C',       params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
+      { name:'富士 FP-3000B',      params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
+      { name:'拍立得 600',         params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
+      { name:'拍立得 669',         params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
+      { name:'拍立得 690',         params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
+      { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] },
+    ];
+
     const MAX_IMAGE_DIM = 2048;
     const DB_NAME = 'FilmLabDB';
     const DB_VERSION = 2;
@@ -1101,6 +1100,7 @@
       lutUrlLoad: $('#lut-url-load'),
       lutFileInput: $('#lut-file-input'),
       lutModalClose: $('#lut-modal-close'),
+      btnConfirmAdd: $('#btn-confirm-add'),
       toast: $('#toast'),
       proxyBadge: $('#proxy-badge'),
       saveOverlay: $('#save-overlay'),
@@ -1113,7 +1113,8 @@
     let sourceImage = null;        // HTMLImageElement (resized)
     let currentFilterId = null;
     let currentClutTexture = null;
-    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=external CLUT
+    let currentFilter = null;
+    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=CLUT, 7+=param presets
     let useProxy = true;           // try CORS proxies when direct fetch fails
     let customFilters = [];
     let lutCache = {};            // in-memory fallback: url -> blob
@@ -1224,7 +1225,10 @@
       uniform sampler2D u_source;
       uniform sampler2D u_clut;
       uniform float u_clutSize;
-      uniform float u_mode; // 0=passthrough, 1-5=builtin presets, 6=external CLUT
+      uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=external CLUT, 7+=param presets
+      // Parameterized preset uniforms (used when u_mode >= 7)
+      uniform vec3 u_fslope, u_foffset, u_fpower;
+      uniform float u_fsat, u_fcont, u_fgrain, u_ftintR, u_ftintB;
 
       // ---- HaldCLUT lookup (mode 6) ----
       vec3 sampleClut(vec3 rgb) {
@@ -1313,6 +1317,17 @@
         return clamp(c, 0.0, 1.0);
       }
 
+      // Parameterized preset from uniforms (mode >= 7)
+      vec3 applyParamPreset(vec3 c, vec2 uv) {
+        if (u_fgrain > 0.01) {
+          float lum = dot(c, vec3(0.30, 0.59, 0.11)); lum = (lum - 0.5) * u_fcont + 0.5;
+          float n = hash(uv * 1024.0 + fract(uv*137.0)) + hash(uv * 2048.0 - fract(uv*79.0)*0.5);
+          n = (n - 0.5) * u_fgrain * 0.07; n *= 1.0 - abs(lum - 0.5) * 1.2;
+          lum = clamp(lum + n, 0.0, 1.0); c = vec3(lum);
+        } else { c = ascCDL(c, u_fslope, u_foffset, u_fpower); c = saturate(c, u_fsat); c = contrast(c, u_fcont); }
+        return clamp(c, 0.0, 1.0);
+      }
+
       void main() {
         vec4 color = texture2D(u_source, v_texCoord);
         int mode = int(u_mode + 0.5);
@@ -1321,6 +1336,9 @@
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode == 6) {
           vec3 filtered = sampleClut(color.rgb);
+          gl_FragColor = vec4(filtered, color.a);
+        } else if (mode >= 7) {
+          vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
           gl_FragColor = vec4(filtered, color.a);
         } else {
           gl_FragColor = color;
@@ -1527,6 +1545,19 @@
 
       // Set mode — MUST use uniform1f (shader uniform is float, not int)
       gl.uniform1f(uModeLoc, mode);
+
+      // Set parameterized preset uniforms (mode >= 7)
+      if (mode >= 7 && currentFilter && currentFilter.params) {
+        const p = currentFilter.params;
+        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fslope'), p[0], p[1], p[2]);
+        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_foffset'), p[3], p[4], p[5]);
+        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fpower'), p[6], p[7], p[8]);
+        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fsat'), p[9]);
+        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fcont'), p[10]);
+        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fgrain'), p[11]);
+        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintR'), p[12]);
+        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintB'), p[13]);
+      }
 
       // Vertex positions
       const posLoc = gl.getAttribLocation(glProgram, 'a_position');
@@ -1994,7 +2025,7 @@
       addCard.className = 'filter-card add-card';
       addCard.innerHTML = `
         <span class="add-icon">+</span>
-        <span class="add-label">自定义<br>滤镜</span>
+        <span class="add-label">更多<br>滤镜</span>
       `;
       addCard.addEventListener('click', openLUTModal);
       strip.appendChild(addCard);
@@ -2035,7 +2066,7 @@
     }
 
     function selectFilter(filter) {
-      currentFilterId = filter.id;
+      currentFilterId = filter.id; currentFilter = filter;
       const state = filterStates[filter.id] || { loaded: false, error: false };
       filterStates[filter.id] = state;
       state.loaded = true;
@@ -2288,20 +2319,55 @@
     }
 
     // ===================== CUSTOM LUT =====================
+    let selectedLibIds = new Set();
+
+    function renderFilmLibraryGrid() {
+      const grid = document.getElementById('film-library-grid'); if (!grid) return;
+      grid.innerHTML = FILM_LIBRARY.map((f, i) => {
+        const id = 'lib-' + i;
+        const alreadyAdded = customFilters.some(cf => cf.url === ('lib://' + i));
+        const sel = selectedLibIds.has(id);
+        return '<div class="film-lib-card' + (alreadyAdded ? ' added' : '') + (sel && !alreadyAdded ? ' selected' : '') + '" data-lib-id="' + id + '" data-lib-idx="' + i + '">' + f.name + '</div>';
+      }).join('');
+      grid.querySelectorAll('.film-lib-card:not(.added)').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.dataset.libId;
+          if (selectedLibIds.has(id)) { selectedLibIds.delete(id); card.classList.remove('selected'); }
+          else { selectedLibIds.add(id); card.classList.add('selected'); }
+          updateConfirmButton();
+        });
+      });
+      updateConfirmButton();
+    }
+
+    function updateConfirmButton() {
+      if (!els.btnConfirmAdd) return;
+      const n = selectedLibIds.size;
+      els.btnConfirmAdd.textContent = n > 0 ? '确定添加（已选 ' + n + ' 个）' : '确定添加（已选 0 个）';
+      els.btnConfirmAdd.disabled = n === 0;
+    }
+
+    function batchAddSelectedFilters() {
+      if (selectedLibIds.size === 0) return;
+      selectedLibIds.forEach(id => {
+        const idx = parseInt(document.querySelector('[data-lib-id="' + id + '"]')?.dataset?.libIdx || '0');
+        if (isNaN(idx)) return; const f = FILM_LIBRARY[idx]; if (!f) return;
+        const fid = 'lib-' + idx;
+        if (customFilters.some(cf => cf.id === fid)) return;
+        const presetId = 7 + idx;
+        customFilters.push({ id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: presetId, params: f.params });
+        filterStates[fid] = { loaded: true, error: false, thumbDataUrl: null };
+      });
+      selectedLibIds.clear(); renderFilmLibraryGrid(); renderFilterCards();
+      const lastNew = customFilters[customFilters.length - 1]; if (lastNew && sourceImage) selectFilter(lastNew);
+      showToast('已添加，点击首页滤镜卡片即可使用');
+    }
+
     function openLUTModal() {
       els.lutModal.classList.add('open');
       els.lutUrlInput.value = '';
-      els.lutUrlInput.focus();
-
-      // Populate manual download links for all filters
-      const linksContainer = document.getElementById('manual-dl-links');
-      if (linksContainer) {
-        linksContainer.innerHTML = [...FILTERS, ...customFilters].map(f =>
-          `<a class="manual-dl-link" href="${f.url}" target="_blank" rel="noopener" download>
-            📥 ${f.name}
-          </a>`
-        ).join('');
-      }
+      selectedLibIds.clear();
+      renderFilmLibraryGrid();
     }
 
     function closeLUTModal() {
@@ -2571,6 +2637,7 @@
       els.lutFileInput.value = '';
     });
     els.lutModalClose.addEventListener('click', closeLUTModal);
+    els.btnConfirmAdd.addEventListener('click', batchAddSelectedFilters);
     els.lutModal.addEventListener('click', (e) => {
       if (e.target === els.lutModal) closeLUTModal();
     });
