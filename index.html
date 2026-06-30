@@ -961,6 +961,11 @@
         </label>
         <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
 
+        <label class="modal-file-btn" for="cube-file-input" style="margin-top:8px;">
+          🎛 从本地文件选取 .cube 3D LUT
+        </label>
+        <input type="file" id="cube-file-input" accept=".cube" style="display:none">
+
         <div class="modal-actions">
           <button class="btn-secondary" id="lut-modal-close">取消</button>
         </div>
@@ -1099,6 +1104,7 @@
       lutUrlInput: $('#lut-url-input'),
       lutUrlLoad: $('#lut-url-load'),
       lutFileInput: $('#lut-file-input'),
+      cubeFileInput: $('#cube-file-input'),
       lutModalClose: $('#lut-modal-close'),
       btnConfirmAdd: $('#btn-confirm-add'),
       toast: $('#toast'),
@@ -1225,6 +1231,7 @@
       uniform sampler2D u_source;
       uniform sampler2D u_clut;
       uniform float u_clutSize;
+      uniform sampler2D u_lut3d; uniform float u_lut3dSize;
       uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=external CLUT, 7+=param presets
       // Parameterized preset uniforms (used when u_mode >= 7)
       uniform vec3 u_fslope, u_foffset, u_fpower;
@@ -1317,6 +1324,19 @@
         return clamp(c, 0.0, 1.0);
       }
 
+      // Trilinear 3D LUT from 2D texture (mode 8)
+      vec3 sample3DLUT(vec3 rgb) {
+        float N = u_lut3dSize;
+        float bC = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
+        float slice = floor(bC); float fB = bC - slice;
+        float row = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
+        float col = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float x = (col + 0.5) / N;
+        float y0 = (slice * N + row + 0.5) / (N * N);
+        float y1 = ((slice + 1.0) * N + row + 0.5) / (N * N);
+        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fB);
+      }
+
       // Parameterized preset from uniforms (mode >= 7)
       vec3 applyParamPreset(vec3 c, vec2 uv) {
         if (u_fgrain > 0.01) {
@@ -1337,6 +1357,8 @@
         } else if (mode == 6) {
           vec3 filtered = sampleClut(color.rgb);
           gl_FragColor = vec4(filtered, color.a);
+        } else if (mode == 8) {
+          gl_FragColor = vec4(sample3DLUT(color.rgb), color.a);
         } else if (mode >= 7) {
           vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
           gl_FragColor = vec4(filtered, color.a);
@@ -1349,7 +1371,7 @@
     let gl = null;
     let glProgram = null;
     let glSourceTex = null;
-    let glClutTex = null;
+    let glClutTex = null; let gl3DLutTex = null; let gl3DLutSize = 33;
     let glPositionBuffer = null;
     let glTexCoordBuffer = null;
     let glQuadVerts = null; // computed for aspect ratio
@@ -1513,30 +1535,24 @@
     let glDummyTex = null;        // 1x1 texture bound to u_clut when not in mode 6
 
     function render(mode) {
-      // mode: 0=passthrough, 1-5=builtin presets, 6=external CLUT
-      if (!gl || !glSourceTex) return;
-      if (!glProgram) return;
+      // mode: 0=passthrough, 1-5=builtin, 6=CLUT, 7+=param, 8=3D LUT
+      if (!gl || !glSourceTex || !glProgram) return;
 
-      gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.clearColor(0.118, 0.094, 0.071, 1.0); gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(glProgram);
 
-      gl.useProgram(glProgram);
-
+      const uLut3dLoc = gl.getUniformLocation(glProgram, 'u_lut3d');
+      const uLut3dSizeLoc = gl.getUniformLocation(glProgram, 'u_lut3dSize');
       const uModeLoc = gl.getUniformLocation(glProgram, 'u_mode');
       const uSourceLoc = gl.getUniformLocation(glProgram, 'u_source');
       const uClutLoc = gl.getUniformLocation(glProgram, 'u_clut');
       const uClutSizeLoc = gl.getUniformLocation(glProgram, 'u_clutSize');
 
-      // Texture unit 0: source image (always used)
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, glSourceTex);
-      gl.uniform1i(uSourceLoc, 0);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, glSourceTex); gl.uniform1i(uSourceLoc, 0);
 
-      // Texture unit 1: CLUT or dummy (must always be bound!)
+      // Texture unit 1: CLUT or dummy
       gl.activeTexture(gl.TEXTURE1);
       if (mode === 6 && glClutTex) {
-        gl.bindTexture(gl.TEXTURE_2D, glClutTex);
-        gl.uniform1f(uClutSizeLoc, currentClutSize || 1728.0);
+        gl.bindTexture(gl.TEXTURE_2D, glClutTex); gl.uniform1f(uClutSizeLoc, currentClutSize || 1728.0);
       } else {
         gl.bindTexture(gl.TEXTURE_2D, glDummyTex);
         gl.uniform1f(uClutSizeLoc, 1728.0);
@@ -1545,6 +1561,13 @@
 
       // Set mode — MUST use uniform1f (shader uniform is float, not int)
       gl.uniform1f(uModeLoc, mode);
+
+      // Texture unit 2: 3D LUT (mode 8)
+      gl.activeTexture(gl.TEXTURE2);
+      if (mode === 8 && gl3DLutTex) {
+        gl.bindTexture(gl.TEXTURE_2D, gl3DLutTex); gl.uniform1f(uLut3dSizeLoc, gl3DLutSize);
+      } else { gl.bindTexture(gl.TEXTURE_2D, glDummyTex); gl.uniform1f(uLut3dSizeLoc, 33.0); }
+      gl.uniform1i(uLut3dLoc, 2);
 
       // Set parameterized preset uniforms (mode >= 7)
       if (mode >= 7 && currentFilter && currentFilter.params) {
@@ -1598,6 +1621,22 @@
       deleteTexture(glSourceTex);
       glSourceTex = createTexture(img);
       updateQuadVerts(img.naturalWidth, img.naturalHeight);
+    }
+
+    function create3DLUTTexture(cubeData) {
+      const { size, data } = cubeData;
+      gl.getExtension('OES_texture_float');
+      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, size, size * size, 0, gl.RGB, gl.FLOAT, data);
+      return { tex, size };
+    }
+
+    function set3DLUTTexture(tex, size) {
+      deleteTexture(gl3DLutTex); gl3DLutTex = tex; gl3DLutSize = size;
     }
 
     // ===================== THUMBNAIL RENDERER =====================
@@ -1714,6 +1753,28 @@
     }
 
     // ===================== LUT LOADER =====================
+
+    // ===================== .CUBE PARSER =====================
+    function parseCubeFile(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l && l.charAt(0)!=='#');
+      let size = 33;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toUpperCase().startsWith('LUT_3D_SIZE')) {
+          const m = lines[i].match(/(\d+)/); if (m) size = parseInt(m[1]);
+          lines.splice(i, 1); break;
+        }
+      }
+      const vals = [];
+      for (const l of lines) {
+        const p = l.trim().split(/\s+/);
+        if (p.length >= 3 && !isNaN(parseFloat(p[0]))) {
+          vals.push(parseFloat(p[0]), parseFloat(p[1]), parseFloat(p[2]));
+        }
+      }
+      const expected = size * size * size * 3;
+      while (vals.length < expected) vals.push(0);
+      return { size, data: new Float32Array(vals.slice(0, expected)) };
+    }
 
     // CORS proxies tried in order. RawPedia lacks CORS headers, so a proxy
     // is required for the first download. Once cached in IndexedDB as a blob,
@@ -2075,6 +2136,21 @@
       renderFilterCards();
 
       if (!sourceImage) {
+        return;
+      }
+
+      // .cube 3D LUT: parse cached text, create texture, render mode 8
+      if (filter.isCube) {
+        try {
+          const cubeText = lutCache[filter.url];
+          if (!cubeText) { showToast('LUT 数据丢失，请重新导入'); return; }
+          const cubeData = parseCubeFile(cubeText);
+          const { tex, size } = create3DLUTTexture(cubeData);
+          set3DLUTTexture(tex, size);
+          currentMode = 8; render(8);
+          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
+          track('apply', filter.name);
+        } catch (e) { showToast('LUT 加载失败，请重新导入'); }
         return;
       }
 
@@ -2504,6 +2580,43 @@
       }
     }
 
+    async function handleCubeFile(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.cube')) {
+        showToast('请选择 .cube 格式的 3D LUT 文件');
+        return;
+      }
+      try {
+        const text = await new Promise((r) => { const fr = new FileReader(); fr.onload = (e) => r(e.target.result); fr.readAsText(file); });
+        const cubeData = parseCubeFile(text);
+        if (!cubeData || cubeData.size < 2) { showToast('无效的 .cube 文件格式'); return; }
+        const name = file.name.replace(/\.cube$/i, '').replace(/[_-]/g, ' ').trim() || '自定义 LUT';
+        const id = 'cube-local-' + Date.now();
+        const fakeUrl = 'cube://' + file.name + '/' + Date.now();
+
+        // Store .cube data in IndexedDB for cache
+        await dbSetCustomFilter(id, { name, url: fakeUrl, cubeText: text });
+        // Also store raw text in LUT cache
+        lutCache[fakeUrl] = text;
+
+        const { tex, size } = create3DLUTTexture(cubeData);
+        set3DLUTTexture(tex, size);
+
+        const customFilter = { id, name, url: fakeUrl, isCustom: true, isCube: true };
+        customFilters.push(customFilter);
+        filterStates[id] = { loaded: true, error: false, thumbDataUrl: null };
+
+        closeLUTModal();
+        renderFilterCards();
+        showToast('3D LUT 滤镜已添加');
+        selectFilter(customFilter);
+
+      } catch (e) {
+        showToast('加载失败：' + e.message);
+        console.error('Cube file error:', e);
+      }
+    }
+
     // ===================== ANALYTICS =====================
     function track(action, filterName) {
       try {
@@ -2636,6 +2749,11 @@
       if (file) handleCustomLUTFile(file);
       els.lutFileInput.value = '';
     });
+    els.cubeFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleCubeFile(file);
+      els.cubeFileInput.value = '';
+    });
     els.lutModalClose.addEventListener('click', closeLUTModal);
     els.btnConfirmAdd.addEventListener('click', batchAddSelectedFilters);
     els.lutModal.addEventListener('click', (e) => {
@@ -2759,14 +2877,13 @@
 
       // Load custom filters from IndexedDB
       const savedCustom = await dbGetCustomFilters();
-      customFilters = savedCustom.map(cf => ({
-        id: cf.id,
-        name: cf.name,
-        url: cf.url,
-        isCustom: true
-      }));
+      customFilters = savedCustom.map(cf => {
+        const isCube = cf.url && cf.url.startsWith('cube://');
+        if (isCube && cf.cubeText) { lutCache[cf.url] = cf.cubeText; }
+        return { id: cf.id, name: cf.name, url: cf.url, isCustom: true, isCube };
+      });
       customFilters.forEach(cf => {
-        filterStates[cf.id] = { loaded: false, error: false, thumbDataUrl: null };
+        filterStates[cf.id] = cf.isCube ? { loaded: true, error: false, thumbDataUrl: null } : { loaded: false, error: false, thumbDataUrl: null };
       });
 
       // Init WebGL
