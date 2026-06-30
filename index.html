@@ -2248,7 +2248,7 @@
       }
     }
 
-    function selectFilter(filter) {
+    async function selectFilter(filter) {
       currentFilterId = filter.id; currentFilter = filter;
       const state = filterStates[filter.id] || { loaded: false, error: false };
       filterStates[filter.id] = state;
