@@ -902,7 +902,7 @@
       </div>
 
       <!-- Category Tab Bar (auto-hidden if only 1 category) -->
-      <div id="category-bar" class="hidden"><!-- Populated by JS --></div>
+      <div id="category-bar" class="hidden"></div><div id="preset-status" style="padding:2px 8px;font-size:0.6rem;color:var(--accent-dim);text-align:center;min-height:16px;"></div>
 
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
@@ -3034,7 +3034,7 @@
       try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
 
       // Load server presets.json
-      try { presetCategories = await loadPresetsJson(); } catch(e) { presetCategories = []; console.warn('presets.json skipped'); }
+      try { presetCategories = await loadPresetsJson(); var ps=document.getElementById('preset-status'); if(ps){ var t=presetCategories.reduce(function(s,c){return s+(c.presets||[]).length},0); ps.textContent=presetCategories.length+' 分类, '+t+' 预设'; } } catch(e) { presetCategories = []; var ps2=document.getElementById('preset-status'); if(ps2){ps2.textContent='presets.json 加载失败: '+(e.message||'');ps2.style.color='var(--error)';} }
 
       // Render filter cards and category bar
       renderFilterCards();
