@@ -2262,36 +2262,42 @@
 
       renderFilterCards();
 
-      if (!sourceImage) {
-        return;
-      }
+      if (!sourceImage) { return; }
 
       // .cube 3D LUT: server preset or local import
       if (filter.isCube) {
         showPreviewLoading();
+        var dbg=document.getElementById('preset-status');
+        if(dbg)dbg.textContent='加载中: '+filter.name;
         try {
-          let cubeData, texAndSize;
-          const cachedText = lutCache[filter.url];
-          if (cachedText) {
-            // Local import — already cached in memory
-            cubeData = parseCubeFile(cachedText);
-          } else if (filter.isServerPreset) {
-            // Server preset from presets.json — download and cache
-            cubeData = await loadCubeFromServer(filter.url);
-          } else {
-            showToast('LUT 数据丢失，请重新导入');
-            hidePreviewLoading(); return;
+          var rawText=null;
+          if(dbg)dbg.textContent='正在获取: '+filter.name;
+          if (filter.isServerPreset) {
+            rawText = await (await fetch(filter.url)).text();
+            if(dbg)dbg.textContent='已下载 '+rawText.length+' 字节';
+            // cache text for future reuse
+            lutCache[filter.url] = rawText;
+          } else if (lutCache[filter.url]) {
+            rawText = lutCache[filter.url];
           }
-          texAndSize = create3DLUTTexture(cubeData);
-          set3DLUTTexture(texAndSize.tex, texAndSize.size);
-          currentMode = 8; render(8);
+          if (!rawText) {
+            hidePreviewLoading(); showToast('无法获取LUT数据'); return;
+          }
+          if(dbg)dbg.textContent='解析中...';
+          var cube=parseCubeFile(rawText);
+          if(!cube||cube.size<2||cube.data.length<10){ hidePreviewLoading(); showToast('解析失败'); return; }
+          if(dbg)dbg.textContent='LUT尺寸: '+cube.size+'³ 点数: '+cube.data.length;
+          var tex=create3DLUTTexture(cube);
+          set3DLUTTexture(tex.tex, tex.size);
+          currentMode=8; render(8);
           hidePreviewLoading();
           updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
           track('apply', filter.name);
-        } catch (e) {
+          if(dbg)dbg.textContent='OK: '+filter.name;
+        } catch(e) {
           hidePreviewLoading();
-          console.error('Cube load error:', e);
-          showToast('LUT 加载失败，点击重试');
+          if(dbg){dbg.textContent='错误: '+(e.message||String(e)).slice(0,120);dbg.style.color='var(--error)';}
+          showToast('加载失败：'+(e.message||'').slice(0,60));
         }
         return;
       }
