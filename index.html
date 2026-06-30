@@ -280,6 +280,18 @@
       padding: 4px 4px 0;
     }
 
+    /* Category Tab Bar */
+    #category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 2px 4px 6px; flex-shrink: 0; scrollbar-width: none; }
+    #category-bar::-webkit-scrollbar { display: none; }
+    #category-bar.hidden { display: none; }
+    .cat-tab {
+      flex: 0 0 auto; padding: 6px 15px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 18px; color: var(--text-muted); font-size: 0.7rem; white-space: nowrap;
+      cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s;
+    }
+    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
+    .cat-tab:active { transform: scale(0.95); }
+
     #filter-strip {
       display: flex;
       gap: 10px;
@@ -889,6 +901,9 @@
         </button>
       </div>
 
+      <!-- Category Tab Bar (auto-hidden if only 1 category) -->
+      <div id="category-bar" class="hidden"><!-- Populated by JS --></div>
+
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
       <div id="filter-strip">
@@ -1074,9 +1089,10 @@
 
     const MAX_IMAGE_DIM = 2048;
     const DB_NAME = 'FilmLabDB';
-    const DB_VERSION = 2;
+    const DB_VERSION = 3;
     const STORE_LUTS = 'luts';
     const STORE_CUSTOM = 'custom_filters';
+    const STORE_CUBE = 'cube_cache';
     const THUMB_W = 160;
     const THUMB_H = 120;
 
@@ -1126,6 +1142,8 @@
     let lutCache = {};            // in-memory fallback: url -> blob
     let filterStates = {};        // id -> { loaded: bool, error: bool, thumbDataUrl: string|null }
     let toastTimer = null;
+    let presetCategories = [];    // loaded from presets.json
+    let currentCategoryIdx = 0;
 
     // Initialize filter states
     // Built-in presets (with preset field) are always "loaded" — instant GPU render
@@ -1147,6 +1165,9 @@
           }
           if (!db.objectStoreNames.contains(STORE_CUSTOM)) {
             db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains(STORE_CUBE)) {
+            db.createObjectStore(STORE_CUBE, { keyPath: 'url' });
           }
         };
         req.onsuccess = () => resolve(req.result);
@@ -1177,6 +1198,25 @@
         store.put({ url, blob, timestamp: Date.now() });
         tx.oncomplete = () => resolve();
         tx.onerror = () => resolve();
+      });
+    }
+
+    async function dbGet(key, storeName) {
+      const db = await dbPromise; if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function dbSet(storeName, key, data) {
+      const db = await dbPromise; if (!db) return;
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).put({ ...data, url: key, _ts: Date.now() });
+        tx.oncomplete = () => resolve(); tx.onerror = () => resolve();
       });
     }
 
@@ -1754,6 +1794,77 @@
 
     // ===================== LUT LOADER =====================
 
+    // ===================== SERVER-SIDE PRESETS =====================
+    async function loadPresetsJson() {
+      try {
+        const resp = await fetch('presets.json', { cache: 'no-cache' });
+        if (!resp.ok) { console.log('presets.json not found, using built-in only'); return []; }
+        const data = await resp.json();
+        if (!Array.isArray(data)) { console.warn('presets.json must be an array'); return []; }
+        console.log('Loaded presets.json:', data.length, 'categories');
+        return data;
+      } catch (e) { console.warn('presets.json load error:', e.message); return []; }
+    }
+
+    function getActivePresets() {
+      if (!presetCategories.length) return [];
+      if (currentCategoryIdx < 0 || currentCategoryIdx >= presetCategories.length) return [];
+      return presetCategories[currentCategoryIdx].presets || [];
+    }
+
+    function getActiveCategoryName() {
+      if (!presetCategories.length) return '';
+      if (currentCategoryIdx < 0 || currentCategoryIdx >= presetCategories.length) return '';
+      return presetCategories[currentCategoryIdx].category || '';
+    }
+
+    function renderCategoryBar() {
+      if (presetCategories.length <= 1) {
+        document.getElementById('category-bar').classList.add('hidden');
+        document.getElementById('category-bar').innerHTML = '';
+        return;
+      }
+      const bar = document.getElementById('category-bar');
+      bar.classList.remove('hidden');
+      bar.innerHTML = presetCategories.map((cat, i) =>
+        '<button class="cat-tab' + (i === currentCategoryIdx ? ' active' : '') + '" data-cat="' + i + '">' + cat.category + '</button>'
+      ).join('');
+      bar.querySelectorAll('.cat-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentCategoryIdx = parseInt(btn.dataset.cat);
+          renderCategoryBar();
+          renderFilterCards();
+          const act = getActivePresets();
+          if (act.length > 0) {
+            const fid = 'preset-cube-' + currentCategoryIdx + '-0';
+            const first = { id: fid, name: act[0].name, url: act[0].url, isCube: true, isServerPreset: true };
+            selectFilter(first);
+          }
+        });
+      });
+      const active = bar.querySelector('.cat-tab.active');
+      if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    async function loadCubeFromServer(url) {
+      // Check IndexedDB cache first
+      const cached = await dbGet(url, 'cube_cache');
+      if (cached && cached.data) {
+        const arr = new Float32Array(cached.data);
+        return { size: cached.size, data: arr };
+      }
+      // Download from server
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const text = await resp.text();
+      const cubeData = parseCubeFile(text);
+      // Cache to IndexedDB
+      try {
+        await dbSet('cube_cache', url, { size: cubeData.size, data: Array.from(cubeData.data), url });
+      } catch (e) {}
+      return cubeData;
+    }
+
     // ===================== .CUBE PARSER =====================
     function parseCubeFile(text) {
       const lines = text.split('\n').map(l => l.trim()).filter(l => l && l.charAt(0)!=='#');
@@ -2046,7 +2157,18 @@
       const strip = els.filterStrip;
       strip.innerHTML = '';
 
-      const allFilters = [...FILTERS, ...customFilters];
+      // Server-preset .cube filters (from presets.json)
+      const serverPresets = [];
+      try {
+        presetCategories.forEach((cat, ci) => {
+          (cat.presets || []).forEach((p, pi) => {
+            const fid = 'preset-cube-' + ci + '-' + pi;
+            serverPresets.push({ id: fid, name: p.name, url: p.url, isCube: true, isServerPreset: true });
+            if (!filterStates[fid]) filterStates[fid] = { loaded: false, error: false, thumbDataUrl: null };
+          });
+        });
+      } catch(e) {}
+      const allFilters = [...FILTERS, ...serverPresets, ...customFilters];
 
       allFilters.forEach((f, i) => {
         const state = filterStates[f.id] || { loaded: false, error: false, thumbDataUrl: null };
@@ -2139,18 +2261,33 @@
         return;
       }
 
-      // .cube 3D LUT: parse cached text, create texture, render mode 8
+      // .cube 3D LUT: server preset or local import
       if (filter.isCube) {
+        showPreviewLoading();
         try {
-          const cubeText = lutCache[filter.url];
-          if (!cubeText) { showToast('LUT 数据丢失，请重新导入'); return; }
-          const cubeData = parseCubeFile(cubeText);
-          const { tex, size } = create3DLUTTexture(cubeData);
-          set3DLUTTexture(tex, size);
+          let cubeData, texAndSize;
+          const cachedText = lutCache[filter.url];
+          if (cachedText) {
+            // Local import — already cached in memory
+            cubeData = parseCubeFile(cachedText);
+          } else if (filter.isServerPreset) {
+            // Server preset from presets.json — download and cache
+            cubeData = await loadCubeFromServer(filter.url);
+          } else {
+            showToast('LUT 数据丢失，请重新导入');
+            hidePreviewLoading(); return;
+          }
+          texAndSize = create3DLUTTexture(cubeData);
+          set3DLUTTexture(texAndSize.tex, texAndSize.size);
           currentMode = 8; render(8);
+          hidePreviewLoading();
           updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
           track('apply', filter.name);
-        } catch (e) { showToast('LUT 加载失败，请重新导入'); }
+        } catch (e) {
+          hidePreviewLoading();
+          console.error('Cube load error:', e);
+          showToast('LUT 加载失败，点击重试');
+        }
         return;
       }
 
@@ -2896,8 +3033,12 @@
       // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
       try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
 
-      // Render filter cards
+      // Load server presets.json
+      try { presetCategories = await loadPresetsJson(); } catch(e) { presetCategories = []; console.warn('presets.json skipped'); }
+
+      // Render filter cards and category bar
       renderFilterCards();
+      renderCategoryBar();
 
       // Register PWA
       registerPWA();

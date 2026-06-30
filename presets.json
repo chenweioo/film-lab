@@ -1,0 +1,40 @@
+[
+  {
+    "category": "🎬 基础变体",
+    "presets": [
+      { "name": "5207 N 中性", "description": "Vision3 中性直出", "url": "presets/N 5207.cube" },
+      { "name": "5207 S1 风格一", "description": "暖调电影感", "url": "presets/S1 5207.cube" },
+      { "name": "5207 S2 风格二", "description": "冷调青橙风格", "url": "presets/S2 5207.cube" }
+    ]
+  },
+  {
+    "category": "🎨 原色系列",
+    "presets": [
+      { "name": "原色 +1 暖调", "description": "原色暖调偏移", "url": "presets/原 柯达5207 +1.cube" },
+      { "name": "原色 +2 强暖", "description": "原色强暖偏移", "url": "presets/原 柯达5207 +2.cube" },
+      { "name": "原色 -1 冷调", "description": "原色冷调偏移", "url": "presets/原 柯达5207 -1.cube" },
+      { "name": "原色 -2 强冷", "description": "原色强冷偏移", "url": "presets/原 柯达5207 -2.cube" },
+      { "name": "原色 -S 柔和", "description": "原色柔和风格", "url": "presets/原 柯达5207 -S.cube" }
+    ]
+  },
+  {
+    "category": "📐 标准系列",
+    "presets": [
+      { "name": "标准 +1 暖调", "description": "标准暖调偏移", "url": "presets/标 柯达5207 +1.cube" },
+      { "name": "标准 +2 强暖", "description": "标准强暖偏移", "url": "presets/标 柯达5207 +2.cube" },
+      { "name": "标准 -1 冷调", "description": "标准冷调偏移", "url": "presets/标 柯达5207 -1.cube" },
+      { "name": "标准 -2 强冷", "description": "标准强冷偏移", "url": "presets/标 柯达5207 -2.cube" },
+      { "name": "标准 -S 柔和", "description": "标准柔和风格", "url": "presets/标 柯达5207 -S.cube" }
+    ]
+  },
+  {
+    "category": "📏 标准II系列",
+    "presets": [
+      { "name": "标II +1 暖调", "description": "标准II暖调偏移", "url": "presets/标2 柯达5207 +1.cube" },
+      { "name": "标II +2 强暖", "description": "标准II强暖偏移", "url": "presets/标2 柯达5207 +2.cube" },
+      { "name": "标II -1 冷调", "description": "标准II冷调偏移", "url": "presets/标2 柯达5207 -1.cube" },
+      { "name": "标II -2 强冷", "description": "标准II强冷偏移", "url": "presets/标2 柯达5207 -2.cube" },
+      { "name": "标II -S 柔和", "description": "标准II柔和风格", "url": "presets/标2 柯达5207 -S.cube" }
+    ]
+  }
+]
