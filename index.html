@@ -1664,29 +1664,30 @@
 
     function create3DLUTTexture(cubeData) {
       const N = cubeData.size, src = cubeData.data;
-      // Standard .cube data order: R slowest, G middle, B fastest (per DaVinci spec)
-      // Pack into 2D texture: width=N (B axis), height=N*N (G rows, then R blocks)
-      // pixel at (r,g,b) → row = r*N + g, col = b
+      // .cube stores data in this exact pixel order:
+      // for r=0..N-1: for g=0..N-1: for b=0..N-1: R G B
+      // Flatten into RGBA texture, width=N (b axis), height=N*N (each row is one (r,g) pair)
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
       const total = N * N * N;
       const pixels = new Uint8Array(total * 4);
+      let srcOff = 0;
       for (let r = 0; r < N; r++) {
         for (let g = 0; g < N; g++) {
           for (let b = 0; b < N; b++) {
-            const srcIdx = (r * N * N + g * N + b) * 3; // R-slowest, B-fastest
             const dstRow = r * N + g;
-            const dstCol = b;
-            const dstIdx = (dstRow * N + dstCol) * 4;
-            pixels[dstIdx]     = Math.round(Math.max(0, Math.min(1, src[srcIdx]))   * 255);
-            pixels[dstIdx + 1] = Math.round(Math.max(0, Math.min(1, src[srcIdx+1])) * 255);
-            pixels[dstIdx + 2] = Math.round(Math.max(0, Math.min(1, src[srcIdx+2])) * 255);
-            pixels[dstIdx + 3] = 255;
+            const dstOff = (dstRow * N + b) * 4;
+            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
+            pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcOff+1])) * 255);
+            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
+            pixels[dstOff + 3] = 255;
+            srcOff += 3;
           }
         }
       }
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
