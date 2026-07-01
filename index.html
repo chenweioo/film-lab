@@ -1364,19 +1364,24 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // Trilinear 3D LUT from 2D texture (mode 8)
-      // .cube data order: B fastest, then G, then R slowest.
-      // 2D texture layout: x=B, y=G+R*N (matches linear file order).
+      // Trilinear 3D LUT lookup (mode 8)
+      // Texture packed as: row = r*N + g, col = b (matches .cube R-slowest B-fastest order).
+      // GPU LINEAR filter gives bilinear interpolation on B (x-axis) + G (y-axis within each r-slice).
+      // Mixing two r-slices completes full 8-point trilinear.
       vec3 sample3DLUT(vec3 rgb) {
         float N = u_lut3dSize;
-        float rC = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
-        float gC = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
-        float bC = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
-        float rSlice = floor(rC); float fracR = rC - rSlice;
-        float x = (bC + 0.5) / N;  // B varies fastest → x-axis
-        float y0 = (rSlice * N + gC + 0.5) / (N * N);
-        float y1 = ((rSlice + 1.0) * N + gC + 0.5) / (N * N);
-        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
+        float rIdx = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float gIdx = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
+        float bIdx = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
+        float r0 = floor(rIdx), fracR = rIdx - r0;
+        float x = (bIdx + 0.5) / N;
+        float y0 = (r0 * N + gIdx + 0.5) / (N * N);
+        float y1 = ((r0 + 1.0) * N + gIdx + 0.5) / (N * N);
+        return mix(
+          texture2D(u_lut3d, vec2(x, y0)).rgb,
+          texture2D(u_lut3d, vec2(x, y1)).rgb,
+          fracR
+        );
       }
 
       // Parameterized preset from uniforms (mode >= 7)
@@ -1666,24 +1671,34 @@
     }
 
     function create3DLUTTexture(cubeData) {
-      const { size, data } = cubeData;
-      // pixelStorei(UNPACK_ALIGNMENT, 1) + RGBA: works on ALL GPUs without padding issues
+      const N = cubeData.size, src = cubeData.data;
+      // Standard .cube data order: R slowest, G middle, B fastest (per DaVinci spec)
+      // Pack into 2D texture: width=N (B axis), height=N*N (G rows, then R blocks)
+      // pixel at (r,g,b) → row = r*N + g, col = b
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
-      const pixels = new Uint8Array(size * size * size * 4); // RGBA per voxel
-      for (let i = 0; i < data.length / 3; i++) {
-        const idx = i * 3;
-        pixels[i * 4]     = Math.round(Math.max(0, Math.min(1, data[idx]))   * 255);
-        pixels[i * 4 + 1] = Math.round(Math.max(0, Math.min(1, data[idx+1])) * 255);
-        pixels[i * 4 + 2] = Math.round(Math.max(0, Math.min(1, data[idx+2])) * 255);
-        pixels[i * 4 + 3] = 255;
+      const total = N * N * N;
+      const pixels = new Uint8Array(total * 4);
+      for (let r = 0; r < N; r++) {
+        for (let g = 0; g < N; g++) {
+          for (let b = 0; b < N; b++) {
+            const srcIdx = (r * N * N + g * N + b) * 3; // R-slowest, B-fastest
+            const dstRow = r * N + g;
+            const dstCol = b;
+            const dstIdx = (dstRow * N + dstCol) * 4;
+            pixels[dstIdx]     = Math.round(Math.max(0, Math.min(1, src[srcIdx]))   * 255);
+            pixels[dstIdx + 1] = Math.round(Math.max(0, Math.min(1, src[srcIdx+1])) * 255);
+            pixels[dstIdx + 2] = Math.round(Math.max(0, Math.min(1, src[srcIdx+2])) * 255);
+            pixels[dstIdx + 3] = 255;
+          }
+        }
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size * size, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      return { tex, size };
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      return { tex, size: N };
     }
 
     function set3DLUTTexture(tex, size) {
