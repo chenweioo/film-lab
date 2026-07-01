@@ -1037,7 +1037,8 @@
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
+      { id: 'idtest', name: '🔬 自验证(身份LUT)', preset: 99 } // builds inline identity cube — should not change colors
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -2197,7 +2198,7 @@
         presetCategories.forEach((cat, ci) => {
           (cat.presets || []).forEach((p, pi) => {
             const fid = 'preset-cube-' + ci + '-' + pi;
-            serverPresets.push({ id: fid, name: p.name, preset: 17 + ci * 100 + pi, params: p.params || [1,1,1,0,0,0,1,1,1,1,1,0,0,0] });
+            serverPresets.push({ id: fid, name: p.name, isCube: true, isServerPreset: true, url: p.url });
             if (!filterStates[fid]) filterStates[fid] = { loaded: false, error: false, thumbDataUrl: null };
           });
         });
@@ -2292,8 +2293,44 @@
 
       if (!sourceImage) { return; }
 
+      // Server-side .cube 3D LUT preset
+      if (filter.isCube && filter.isServerPreset) {
+        showPreviewLoading();
+        try {
+          var resp = await fetch(filter.url);
+          if (!resp.ok) throw new Error('HTTP '+resp.status);
+          var text = await resp.text();
+          var cubeD = parseCubeFile(text);
+          var texInfo = create3DLUTTexture(cubeD);
+          set3DLUTTexture(texInfo.tex, texInfo.size);
+          currentMode = 8; render(8);
+          hidePreviewLoading();
+          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
+          track('apply', filter.name);
+        } catch(e) {
+          hidePreviewLoading();
+          console.error('Cube error:',e);
+          showToast('加载失败');
+        }
+        return;
+      }
+
       // Built-in / film library / server preset — all GPU shader
       if (filter.preset) {
+        // preset 99 = identity LUT self-test
+        if (filter.preset === 99) {
+          var idSize = 17;
+          var idVals = new Float32Array(idSize*idSize*idSize*3);
+          for(var ir=0;ir<idSize;ir++){for(var ig=0;ig<idSize;ig++){for(var ib=0;ib<idSize;ib++){
+            var ii=(ir*idSize*idSize+ig*idSize+ib)*3;
+            idVals[ii]=ir/(idSize-1); idVals[ii+1]=ig/(idSize-1); idVals[ii+2]=ib/(idSize-1);
+          }}}
+          var idT = create3DLUTTexture({size:idSize,data:idVals});
+          set3DLUTTexture(idT.tex, idT.size);
+          currentMode = 8; render(8);
+          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
+          track('apply', filter.name); return;
+        }
         currentMode = filter.preset;
         render(currentMode);
         updateFilterCardUI(filter.id);
