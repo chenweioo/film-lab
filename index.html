@@ -2300,14 +2300,9 @@
           showToast('download:'+filter.url.split('/').pop());
           var resp = await fetch(filter.url, {cache:'no-cache'});
           if (!resp.ok) throw new Error('H'+resp.status);
-          showToast('recv:'+resp.headers.get('content-length')+'B');
           var text = await resp.text();
-          showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
-          if (!cubeD || cubeD.size<2) throw new Error('parse failed');
-          // Diagnostic: read mid-gray value from parsed .cube
-          var N=cubeD.size, midR=cubeD.data[(16*N*N+16*N+16)*3], midG=cubeD.data[(16*N*N+16*N+16)*3+1], midB=cubeD.data[(16*N*N+16*N+16)*3+2];
-          showToast('LUT:'+cubeD.size+'³ 中灰R:'+midR.toFixed(2)+' G:'+midG.toFixed(2)+' B:'+midB.toFixed(2));
+          if (!cubeD || cubeD.size<2) throw new Error('parse bad');
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
