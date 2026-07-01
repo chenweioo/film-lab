@@ -1678,9 +1678,9 @@
           for (let b = 0; b < N; b++) {
             const dstRow = r * N + g;
             const dstOff = (dstRow * N + b) * 4;
-            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
+            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
             pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcOff+1])) * 255);
-            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
+            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
             pixels[dstOff + 3] = 255;
             srcOff += 3;
           }
