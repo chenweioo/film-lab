@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Cube Test</title>
+<style>body{margin:0;background:#111;color:#fff;font-family:monospace;padding:10px}
+canvas{max-width:100%}.msg{padding:5px;margin:2px;font-size:12px}
+.pass{color:#0f0}.fail{color:#f00}.info{color:#ff0}</style></head>
+<body>
+<h3>Cube 3D LUT Pipeline Test</h3>
+<div id="log"></div>
+<input type="file" id="file" accept=".cube,.png,.jpg,.jpeg">
+<canvas id="c" width="256" height="256"></canvas>
+<script>
+function log(msg, cls) { var d=document.getElementById('log'); d.innerHTML+='<div class="msg '+cls+'">'+msg+'</div>'; }
+var gl=c.getContext('webgl2',{preserveDrawingBuffer:true})||c.getContext('webgl',{preserveDrawingBuffer:true})||c.getContext('experimental-webgl',{preserveDrawingBuffer:true});
+if(!gl){log('NO WebGL','fail');}else{log('WebGL OK','pass');}
+
+var identityLUT=null, cubeLUT=null;
+
+// Build identity 17³ LUT
+function buildIdentity(N){
+  var d=new Float32Array(N*N*N*3);
+  for(var r=0;r<N;r++)for(var g=0;g<N;g++)for(var b=0;b<N;b++){
+    var i=(r*N*N+g*N+b)*3;
+    d[i]=r/(N-1);d[i+1]=g/(N-1);d[i+2]=b/(N-1);
+  }
+  return {size:N,data:d};
+}
+
+function uploadLUT(cube){
+  var N=cube.size,src=cube.data;
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+  var t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  var px=new Uint8Array(N*N*N*4);
+  for(var r=0;r<N;r++)for(var g=0;g<N;g++)for(var b=0;b<N;b++){
+    var si=(r*N*N+g*N+b)*3,di=((r*N+g)*N+b)*4;
+    px[di]=Math.round(Math.max(0,Math.min(1,src[si]))*255);
+    px[di+1]=Math.round(Math.max(0,Math.min(1,src[si+1]))*255);
+    px[di+2]=Math.round(Math.max(0,Math.min(1,src[si+2]))*255);
+    px[di+3]=255;
+  }
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,N,N*N,0,gl.RGBA,gl.UNSIGNED_BYTE,px);
+  return {tex:t,size:N};
+}
+
+var vs=gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vs,'attribute vec2 a;attribute vec2 t;varying vec2 v;void main(){gl_Position=vec4(a,0,1);v=t;}');
+gl.compileShader(vs);
+
+var fsCode='precision highp float;varying vec2 v;uniform sampler2D src;uniform sampler2D lut3d;uniform float sz;'+
+'vec3 sample(vec3 rgb){float N=sz;float rI=clamp(rgb.r*(N-1.),0.,N-1.0001);float gI=clamp(rgb.g*(N-1.),0.,N-1.0001);float bI=clamp(rgb.b*(N-1.),0.,N-1.0001);float r0=floor(rI),fR=rI-r0;'+
+'float x=(bI+.5)/N;float y0=(r0*N+gI+.5)/(N*N);float y1=((r0+1.)*N+gI+.5)/(N*N);'+
+'return mix(texture2D(lut3d,vec2(x,y0)).rgb,texture2D(lut3d,vec2(x,y1)).rgb,fR);}'+
+'void main(){vec4 col=texture2D(src,v);gl_FragColor=vec4(sample(col.rgb),col.a);}';
+var fs=gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fs,fsCode);gl.compileShader(fs);
+if(!gl.getShaderParameter(fs,gl.COMPILE_STATUS)){log('SHADER: '+gl.getShaderInfoLog(fs),'fail');}else{log('Shader compile OK','pass');}
+
+var prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){log('LINK: '+gl.getProgramInfoLog(prog),'fail');}else{log('Program link OK','pass');}
+
+var pb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+var tb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,tb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,1,1,1,0,0,1,0]),gl.STATIC_DRAW);
+
+function render(srcImg,lutTex,lutSize){
+  var st=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,st);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcImg);
+  gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(prog);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,st);gl.uniform1i(gl.getUniformLocation(prog,'src'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,lutTex);gl.uniform1i(gl.getUniformLocation(prog,'lut3d'),1);
+  gl.uniform1f(gl.getUniformLocation(prog,'sz'),lutSize);
+  gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,tb);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.deleteTexture(st);
+}
+
+// Test pattern: gradient image
+var testCanvas=document.createElement('canvas');testCanvas.width=256;testCanvas.height=256;
+var ctx=testCanvas.getContext('2d');
+var grad=ctx.createLinearGradient(0,0,256,256);
+grad.addColorStop(0,'#ff0000');grad.addColorStop(0.25,'#00ff00');grad.addColorStop(0.5,'#0000ff');grad.addColorStop(0.75,'#ffffff');grad.addColorStop(1,'#000000');
+ctx.fillStyle=grad;ctx.fillRect(0,0,256,256);
+// Also draw color bars
+ctx.fillStyle='#808080';ctx.fillRect(0,120,256,16);
+var testImg=ctx.getImageData(0,0,256,256);
+
+// Build & test identity LUT
+log('Building identity LUT...','info');
+var idCube=buildIdentity(17);
+var idTex=uploadLUT(idCube);
+render(testImg,idTex.tex,idTex.size);
+log('Identity LUT rendered. Top half should look like original gradient.','info');
+log('If it looks red/blue/wrong → pipeline has a bug','info');
+
+// Now test with a real .cube file
+document.getElementById('file').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var text=ev.target.result;
+    log('Loaded .cube: '+text.length+' bytes','info');
+    // Parse
+    var lines=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l[0]!=='#';});
+    var size=33;
+    for(var i=0;i<lines.length;i++){
+      var u=lines[i].toUpperCase();
+      if(u.startsWith('LUT_3D_SIZE')){size=parseInt(lines[i].match(/\d+/)[0]);lines.splice(i,1);break;}
+    }
+    var vals=[];
+    for(var i=0;i<lines.length;i++){
+      var p=lines[i].split(/\s+/);
+      if(p.length>=3&&!isNaN(parseFloat(p[0]))){vals.push(parseFloat(p[0]),parseFloat(p[1]),parseFloat(p[2]));}
+    }
+    var expected=size*size*size*3;
+    while(vals.length<expected)vals.push(0);
+    var cube={size:size,data:new Float32Array(vals.slice(0,expected))};
+    log('Parsed LUT: '+size+'³, '+vals.length+' values','info');
+
+    // Read mid-gray
+    var mi=16*size*size+16*size+16;
+    var mr=cube.data[mi*3],mg=cube.data[mi*3+1],mb=cube.data[mi*3+2];
+    log('Mid-gray (0.5,0.5,0.5) → R:'+mr.toFixed(3)+' G:'+mg.toFixed(3)+' B:'+mb.toFixed(3),'info');
+
+    var t=uploadLUT(cube);
+    render(testImg,t.tex,t.size);
+    log('Cube LUT rendered! Check if colors changed correctly.','info');
+  };
+  reader.readAsText(f);
+});
+</script>
+</body>
+</html>
