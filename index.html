@@ -1687,11 +1687,9 @@
         const srcIdx = ii * 3;
         // Texture layout: row = r*N + g, col = b (R/G bilinear in y, B in x)
         const dstOff = ((r*N + g) * N + b) * 4;
-        var R = src[srcIdx], G = src[srcIdx+1], B = src[srcIdx+2];
-        if (cubeData.srcOrder === 'bgr') { R = src[srcIdx+2]; B = src[srcIdx]; }
-        pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, R)) * 255);
-        pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, G)) * 255);
-        pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, B)) * 255);
+        pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcIdx]))   * 255);
+        pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcIdx+1])) * 255);
+        pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcIdx+2])) * 255);
         pixels[dstOff + 3] = 255;
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -2294,7 +2292,6 @@
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          cubeD.srcOrder = 'bgr'; // DaVinci cube uses BGR, swap R↔B in texture upload
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
