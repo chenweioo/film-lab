@@ -2298,10 +2298,8 @@
         showPreviewLoading();
         try {
           showToast('下载中: '+filter.name);
-          // URL-encode path segments: spaces→%20, 中文→UTF-8编码
-          var encodedUrl = filter.url.split('/').map(function(seg){return encodeURIComponent(seg);}).join('/');
-          var resp = await fetch(encodedUrl);
-          if (!resp.ok) throw new Error(resp.status+': '+resp.statusText);
+          var resp = await fetch(filter.url);
+          if (!resp.ok) throw new Error('HTTP '+resp.status);
           var text = await resp.text();
           showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
@@ -2318,7 +2316,9 @@
           showToast(filter.name+' ✓');
         } catch(e) {
           hidePreviewLoading();
-          showToast('失败:'+(e.message||'').slice(0,50));
+          var em = e.message || String(e);
+          showToast('❌ '+em.slice(0,80));
+          console.error('Cube fail details:', filter.url, em);
         }
         return;
       }
@@ -2327,7 +2327,7 @@
       if (filter.preset) {
         // preset 99 = identity LUT self-test
         if (filter.preset === 99) {
-          var idSize = 17;
+          var idSize = 33;
           var idVals = new Float32Array(idSize*idSize*idSize*3);
           for(var ir=0;ir<idSize;ir++){for(var ig=0;ig<idSize;ig++){for(var ib=0;ib<idSize;ib++){
             var ii=(ir*idSize*idSize+ig*idSize+ib)*3;
