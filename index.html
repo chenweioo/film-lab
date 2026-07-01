@@ -2302,7 +2302,12 @@
           if (!resp.ok) throw new Error('H'+resp.status);
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
-          if (!cubeD || cubeD.size<2) throw new Error('parse bad');
+          if (!cubeD || cubeD.size<2) throw new Error('fmt');
+          // DaVinci Resolve .cube uses BGR pixel order, WebGL uses RGBA.
+          // Swap R↔B in-place. (Identity LUT preset:99 skips this via separate code path.)
+          for (var si=0;si<cubeD.data.length;si+=3){
+            var t=cubeD.data[si];cubeD.data[si]=cubeD.data[si+2];cubeD.data[si+2]=t;
+          }
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
