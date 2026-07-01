@@ -2298,8 +2298,10 @@
         showPreviewLoading();
         try {
           showToast('下载中: '+filter.name);
-          var resp = await fetch(filter.url);
-          if (!resp.ok) throw new Error('HTTP '+resp.status);
+          // URL-encode path segments: spaces→%20, 中文→UTF-8编码
+          var encodedUrl = filter.url.split('/').map(function(seg){return encodeURIComponent(seg);}).join('/');
+          var resp = await fetch(encodedUrl);
+          if (!resp.ok) throw new Error(resp.status+': '+resp.statusText);
           var text = await resp.text();
           showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
