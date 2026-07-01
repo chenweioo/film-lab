@@ -1037,8 +1037,7 @@
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
-      { id: 'identity-test', name: '🔬 管线诊断(身份LUT)', preset:9 } // identity 3D LUT — if this shows color shift, pipeline is broken
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -2198,7 +2197,7 @@
         presetCategories.forEach((cat, ci) => {
           (cat.presets || []).forEach((p, pi) => {
             const fid = 'preset-cube-' + ci + '-' + pi;
-            serverPresets.push({ id: fid, name: p.name, url: p.url, isCube: true, isServerPreset: true });
+            serverPresets.push({ id: fid, name: p.name, preset: 17 + ci * 100 + pi, params: p.params || [1,1,1,0,0,0,1,1,1,1,1,0,0,0] });
             if (!filterStates[fid]) filterStates[fid] = { loaded: false, error: false, thumbDataUrl: null };
           });
         });
@@ -2283,8 +2282,7 @@
       }
     }
 
-    async function selectFilter(filter) {
-      currentFilterId = filter.id; currentFilter = filter;
+    async function selectFilter(filter) {  currentFilterId = filter.id; currentFilter = filter;
       const state = filterStates[filter.id] || { loaded: false, error: false };
       filterStates[filter.id] = state;
       state.loaded = true;
@@ -2294,46 +2292,9 @@
 
       if (!sourceImage) { return; }
 
-      // .cube 3D LUT: server preset or local import
-      if (filter.isCube) {
-        showPreviewLoading();
-        try {
-          var cubeData;
-          if (filter.isServerPreset) {
-            cubeData = await loadCubeFromServer(filter.url);
-          } else if (lutCache[filter.url]) {
-            cubeData = parseCubeFile(lutCache[filter.url]);
-          } else {
-            hidePreviewLoading(); showToast('LUT 数据丢失，请重新导入'); return;
-          }
-          if (!cubeData || cubeData.size < 2) { hidePreviewLoading(); showToast('LUT 解析失败'); return; }
-          var tex = create3DLUTTexture(cubeData);
-          set3DLUTTexture(tex.tex, tex.size);
-          currentMode = 8; render(8);
-          hidePreviewLoading();
-          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
-          track('apply', filter.name);
-        } catch (e) {
-          hidePreviewLoading();
-          console.error('Cube load error:', e);
-          showToast('加载失败：' + (e.message || '').slice(0, 60));
-        }
-        return;
-      }
-
-      // Built-in preset: render instantly (GPU shader, no download)
+      // Built-in / film library / server preset — all GPU shader
       if (filter.preset) {
-        if (filter.preset === 9) {
-          // Identity LUT test — proves pipeline is working
-          var N = 17, idData = new Float32Array(N*N*N*3);
-          for (var rr=0;rr<N;rr++){for(var gg=0;gg<N;gg++){for(var bb=0;bb<N;bb++){
-            var ii=(rr*N*N+gg*N+bb)*3;
-            idData[ii]=rr/(N-1); idData[ii+1]=gg/(N-1); idData[ii+2]=bb/(N-1);
-          }}}
-          var idTex = create3DLUTTexture({size:N, data:idData});
-          set3DLUTTexture(idTex.tex, idTex.size);
-        }
-        currentMode = filter.preset === 9 ? 8 : filter.preset;
+        currentMode = filter.preset;
         render(currentMode);
         updateFilterCardUI(filter.id);
         capturePreviewThumbnail(filter.id);
@@ -2364,8 +2325,7 @@
           console.error('Custom LUT load error:', err);
           showToast('自定义滤镜加载失败，点击重试');
         });
-      }
-    }
+      }}
 
     async function handleFileSelect(file) {
       if (!file || !file.type.match(/image\//)) {
