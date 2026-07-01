@@ -1034,6 +1034,7 @@
     // url is kept for optional manual download (available via "+" modal).
     const FILTERS = [
       { id: 'idtest', name: '🔬 身份验证', preset: 99 },
+      { id: 'bluetest', name: '🔵 纯蓝测试', preset: 98 },
       { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
@@ -2308,6 +2309,19 @@
       // Built-in / film library / server preset — all GPU shader
       if (filter.preset) {
         // preset 99 = identity LUT self-test
+        // preset 98 = pure blue LUT test — every pixel→blue
+        if (filter.preset === 98) {
+          var bs=17, bd=new Float32Array(bs*bs*bs*3);
+          for(var ir=0;ir<bs;ir++)for(var ig=0;ig<bs;ig++)for(var ib=0;ib<bs;ib++){
+            var bi=(ir*bs*bs+ig*bs+ib)*3;
+            bd[bi]=0; bd[bi+1]=0; bd[bi+2]=1; // all input→pure blue (R=0,G=0,B=1)
+          }
+          var bt=create3DLUTTexture({size:bs,data:bd});
+          set3DLUTTexture(bt.tex,bt.size);
+          currentMode=8;render(8);
+          updateFilterCardUI(filter.id);capturePreviewThumbnail(filter.id);
+          track('apply',filter.name);return;
+        }
         if (filter.preset === 99) {
           var idSize = 33;
           var idVals = new Float32Array(idSize*idSize*idSize*3);
