@@ -7,7 +7,7 @@ canvas{max-width:100%}.msg{padding:5px;margin:2px;font-size:12px}
 <body>
 <h3>Cube 3D LUT Pipeline Test</h3>
 <div id="log"></div>
-<input type="file" id="file" accept=".cube,.png,.jpg,.jpeg">
+<input type="file" id="file" accept=".cube,.png,.jpg,.jpeg,image/*,text/plain,application/octet-stream">
 <canvas id="c" width="256" height="256"></canvas>
 <script>
 function log(msg, cls) { var d=document.getElementById('log'); d.innerHTML+='<div class="msg '+cls+'">'+msg+'</div>'; }

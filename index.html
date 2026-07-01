@@ -2297,20 +2297,24 @@
       if (filter.isCube && filter.isServerPreset) {
         showPreviewLoading();
         try {
+          showToast('下载中: '+filter.name);
           var resp = await fetch(filter.url);
           if (!resp.ok) throw new Error('HTTP '+resp.status);
           var text = await resp.text();
+          showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
+          if (!cubeD || cubeD.size<2) throw new Error('parse failed');
+          showToast('LUT:'+cubeD.size+'³');
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
           hidePreviewLoading();
           updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
           track('apply', filter.name);
+          showToast(filter.name+' ✓');
         } catch(e) {
           hidePreviewLoading();
-          console.error('Cube error:',e);
-          showToast('加载失败');
+          showToast('失败:'+(e.message||'').slice(0,50));
         }
         return;
       }
