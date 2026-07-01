@@ -902,7 +902,7 @@
       </div>
 
       <!-- Category Tab Bar (auto-hidden if only 1 category) -->
-      <div id="category-bar" class="hidden"></div><div id="preset-status" style="padding:2px 8px;font-size:0.6rem;color:var(--accent-dim);text-align:center;min-height:16px;"></div>
+      <div id="category-bar" class="hidden"></div>
 
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
@@ -1364,16 +1364,19 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // Simple nearest-neighbor 3D LUT lookup (mode 8)
-      // Verify colors match .cube file before adding interpolation.
+      // Trilinear 3D LUT lookup (mode 8)
+      // 2D texture layout: row=r*N+g, col=b. LINEAR filter gives b+g bilinear.
+      // Mix two r-slices for full 8-point trilinear interpolation.
       vec3 sample3DLUT(vec3 rgb) {
         float N = u_lut3dSize;
-        float r0 = floor(clamp(rgb.r, 0.0, 1.0) * (N - 1.0) + 0.5);
-        float g0 = floor(clamp(rgb.g, 0.0, 1.0) * (N - 1.0) + 0.5);
-        float b0 = floor(clamp(rgb.b, 0.0, 1.0) * (N - 1.0) + 0.5);
-        float x = (b0 + 0.5) / N;
-        float y = (r0 * N + g0 + 0.5) / (N * N);
-        return texture2D(u_lut3d, vec2(x, y)).rgb;
+        float rIdx = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float gIdx = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
+        float bIdx = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
+        float r0 = floor(rIdx), fracR = rIdx - r0;
+        float x = (bIdx + 0.5) / N;
+        float y0 = (r0 * N + gIdx + 0.5) / (N * N);
+        float y1 = ((r0 + 1.0) * N + gIdx + 0.5) / (N * N);
+        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
       }
 
       // Parameterized preset from uniforms (mode >= 7)
@@ -1678,9 +1681,9 @@
           for (let b = 0; b < N; b++) {
             const dstRow = r * N + g;
             const dstOff = (dstRow * N + b) * 4;
-            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
+            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
             pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcOff+1])) * 255);
-            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
+            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
             pixels[dstOff + 3] = 255;
             srcOff += 3;
           }
@@ -2281,37 +2284,27 @@
       // .cube 3D LUT: server preset or local import
       if (filter.isCube) {
         showPreviewLoading();
-        var dbg=document.getElementById('preset-status');
-        if(dbg)dbg.textContent='加载中: '+filter.name;
         try {
-          var rawText=null;
-          if(dbg)dbg.textContent='正在获取: '+filter.name;
+          var cubeData;
           if (filter.isServerPreset) {
-            rawText = await (await fetch(filter.url)).text();
-            if(dbg)dbg.textContent='已下载 '+rawText.length+' 字节';
-            // cache text for future reuse
-            lutCache[filter.url] = rawText;
+            cubeData = await loadCubeFromServer(filter.url);
+            lutCache[filter.url] = ''; // mark as cached
           } else if (lutCache[filter.url]) {
-            rawText = lutCache[filter.url];
+            cubeData = parseCubeFile(lutCache[filter.url]);
+          } else {
+            hidePreviewLoading(); showToast('LUT 数据丢失，请重新导入'); return;
           }
-          if (!rawText) {
-            hidePreviewLoading(); showToast('无法获取LUT数据'); return;
-          }
-          if(dbg)dbg.textContent='解析中...';
-          var cube=parseCubeFile(rawText);
-          if(!cube||cube.size<2||cube.data.length<10){ hidePreviewLoading(); showToast('解析失败'); return; }
-          if(dbg)dbg.textContent='LUT尺寸: '+cube.size+'³ 点数: '+cube.data.length;
-          var tex=create3DLUTTexture(cube);
+          if (!cubeData || cubeData.size < 2) { hidePreviewLoading(); showToast('LUT 解析失败'); return; }
+          var tex = create3DLUTTexture(cubeData);
           set3DLUTTexture(tex.tex, tex.size);
-          currentMode=8; render(8);
+          currentMode = 8; render(8);
           hidePreviewLoading();
           updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
           track('apply', filter.name);
-          if(dbg)dbg.textContent='OK: '+filter.name;
-        } catch(e) {
+        } catch (e) {
           hidePreviewLoading();
-          if(dbg){dbg.textContent='错误: '+(e.message||String(e)).slice(0,120);dbg.style.color='var(--error)';}
-          showToast('加载失败：'+(e.message||'').slice(0,60));
+          console.error('Cube load error:', e);
+          showToast('加载失败：' + (e.message || '').slice(0, 60));
         }
         return;
       }
@@ -3059,7 +3052,7 @@
       try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
 
       // Load server presets.json
-      try { presetCategories = await loadPresetsJson(); var ps=document.getElementById('preset-status'); if(ps){ var t=presetCategories.reduce(function(s,c){return s+(c.presets||[]).length},0); ps.textContent=presetCategories.length+' 分类, '+t+' 预设'; } } catch(e) { presetCategories = []; var ps2=document.getElementById('preset-status'); if(ps2){ps2.textContent='presets.json 加载失败: '+(e.message||'');ps2.style.color='var(--error)';} }
+      try { presetCategories = await loadPresetsJson(); } catch(e) { presetCategories = []; }
 
       // Render filter cards and category bar
       renderFilterCards();
