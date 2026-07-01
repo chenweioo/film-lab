@@ -1037,7 +1037,8 @@
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
+      { id: 'identity-test', name: '🔬 管线诊断(身份LUT)', preset:9 } // identity 3D LUT — if this shows color shift, pipeline is broken
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -1675,25 +1676,37 @@
       gl.bindTexture(gl.TEXTURE_2D, tex);
       const total = N * N * N;
       const pixels = new Uint8Array(total * 4);
-      let srcOff = 0;
-      for (let r = 0; r < N; r++) {
-        for (let g = 0; g < N; g++) {
-          for (let b = 0; b < N; b++) {
-            const dstRow = r * N + g;
-            const dstOff = (dstRow * N + b) * 4;
-            pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcOff]))   * 255);
-            pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcOff+1])) * 255);
-            pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcOff+2])) * 255);
-            pixels[dstOff + 3] = 255;
-            srcOff += 3;
-          }
-        }
+      // .cube data order: R_G_B triplets, iterating B→G→R (B innermost, R outermost)
+      // PERF: reuse same offset arithmetic in a single pass
+      for (let ii = 0; ii < total; ii++) {
+        // ii = r*N² + g*N + b  (R slowest, B fastest)
+        const r = Math.floor(ii / (N*N));
+        const rem = ii - r*N*N;
+        const g = Math.floor(rem / N);
+        const b = rem - g*N;
+        const srcIdx = ii * 3;
+        // Texture layout: row = r*N + g, col = b (R/G bilinear in y, B in x)
+        const dstOff = ((r*N + g) * N + b) * 4;
+        pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcIdx]))   * 255);
+        pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcIdx+1])) * 255);
+        pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcIdx+2])) * 255);
+        pixels[dstOff + 3] = 255;
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+      // Self-test: read back neutral-gray pixel (r=16,g=16,b=16 — row 16*N+16=544, col 16)
+      // Expected from N 5207.cube: R≈0.583, G≈0.653, B≈0.648
+      var testRow = Math.floor(N/2) * N + Math.floor(N/2);
+      var testCol = Math.floor(N/2);
+      var expectedR = Math.round(pixels[(testRow * N + testCol) * 4] / 255 * 1000) / 1000;
+      var expectedG = Math.round(pixels[(testRow * N + testCol) * 4 + 1] / 255 * 1000) / 1000;
+      var expectedB = Math.round(pixels[(testRow * N + testCol) * 4 + 2] / 255 * 1000) / 1000;
+      console.log('LUT self-test neutral pixel (0.5,0.5,0.5) → R:',expectedR,'G:',expectedG,'B:',expectedB,'(expect ≈0.58 0.65 0.65)');
+
       return { tex, size: N };
     }
 
@@ -2288,7 +2301,6 @@
           var cubeData;
           if (filter.isServerPreset) {
             cubeData = await loadCubeFromServer(filter.url);
-            lutCache[filter.url] = ''; // mark as cached
           } else if (lutCache[filter.url]) {
             cubeData = parseCubeFile(lutCache[filter.url]);
           } else {
@@ -2311,13 +2323,20 @@
 
       // Built-in preset: render instantly (GPU shader, no download)
       if (filter.preset) {
-        currentMode = filter.preset;
+        if (filter.preset === 9) {
+          // Identity LUT test — proves pipeline is working
+          var N = 17, idData = new Float32Array(N*N*N*3);
+          for (var rr=0;rr<N;rr++){for(var gg=0;gg<N;gg++){for(var bb=0;bb<N;bb++){
+            var ii=(rr*N*N+gg*N+bb)*3;
+            idData[ii]=rr/(N-1); idData[ii+1]=gg/(N-1); idData[ii+2]=bb/(N-1);
+          }}}
+          var idTex = create3DLUTTexture({size:N, data:idData});
+          set3DLUTTexture(idTex.tex, idTex.size);
+        }
+        currentMode = filter.preset === 9 ? 8 : filter.preset;
         render(currentMode);
         updateFilterCardUI(filter.id);
-
-        // Generate thumbnail preview from rendered canvas
         capturePreviewThumbnail(filter.id);
-
         track('apply', filter.name);
         return;
       }
