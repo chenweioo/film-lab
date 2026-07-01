@@ -1,0 +1,49 @@
+functionsDirectory = "D:\\cursor\\film-lab-repo\\netlify\\functions"
+functionsDirectoryOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+headers = []
+
+[build]
+publish = "D:\\cursor\\film-lab-repo"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "npm install"
+functions = "D:\\cursor\\film-lab-repo\\netlify\\functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions.track]
+node_bundler = "esbuild"
+
+[functions.stats]
+node_bundler = "esbuild"
+
+[functions."*"]
+node_bundler = "esbuild"
+
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/:splat"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
