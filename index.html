@@ -1831,7 +1831,7 @@
     // ===================== SERVER-SIDE PRESETS =====================
     async function loadPresetsJson() {
       try {
-        const resp = await fetch('presets.json', { cache: 'no-cache' });
+        const resp = await fetch('presets.json?v=2', { cache: 'reload' });
         if (!resp.ok) { console.log('presets.json not found, using built-in only'); return []; }
         const data = await resp.json();
         if (!Array.isArray(data)) { console.warn('presets.json must be an array'); return []; }
