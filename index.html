@@ -2297,9 +2297,10 @@
       if (filter.isCube && filter.isServerPreset) {
         showPreviewLoading();
         try {
-          showToast('下载中: '+filter.name);
-          var resp = await fetch(filter.url);
-          if (!resp.ok) throw new Error('HTTP '+resp.status);
+          showToast('download:'+filter.url.split('/').pop());
+          var resp = await fetch(filter.url, {cache:'no-cache'});
+          if (!resp.ok) throw new Error('H'+resp.status);
+          showToast('recv:'+resp.headers.get('content-length')+'B');
           var text = await resp.text();
           showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
@@ -2317,8 +2318,8 @@
         } catch(e) {
           hidePreviewLoading();
           var em = e.message || String(e);
-          showToast('❌ '+em.slice(0,80));
-          console.error('Cube fail details:', filter.url, em);
+          showToast('err:'+em.slice(0,60));
+          console.error('Cube fail:',filter.url,em);
         }
         return;
       }

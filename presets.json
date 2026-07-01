@@ -1,28 +1,28 @@
 [
   { "category":"🎬 基础变体","presets":[
-    {"name":"N 5207",     "url":"presets/N 5207.cube", "desc":"Vision3 中性"},
-    {"name":"S1 5207",    "url":"presets/S1 5207.cube","desc":"暖调电影感"},
-    {"name":"S2 5207",    "url":"presets/S2 5207.cube","desc":"冷调青橙"}
+    {"name":"N 5207",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/N%205207.cube", "desc":"Vision3 中性"},
+    {"name":"S1 5207",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/S1%205207.cube","desc":"暖调电影感"},
+    {"name":"S2 5207",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/S2%205207.cube","desc":"冷调青橙"}
   ]},
   { "category":"🎨 原色系列","presets":[
-    {"name":"原色 +1",     "url":"presets/原 柯达5207 +1.cube","desc":"暖调偏移"},
-    {"name":"原色 +2",     "url":"presets/原 柯达5207 +2.cube","desc":"强暖偏移"},
-    {"name":"原色 -1",     "url":"presets/原 柯达5207 -1.cube","desc":"冷调偏移"},
-    {"name":"原色 -2",     "url":"presets/原 柯达5207 -2.cube","desc":"强冷偏移"},
-    {"name":"原色 -S",     "url":"presets/原 柯达5207 -S.cube","desc":"柔和风格"}
+    {"name":"原色 +1",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube","desc":"暖调偏移"},
+    {"name":"原色 +2",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube","desc":"强暖偏移"},
+    {"name":"原色 -1",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-1.cube","desc":"冷调偏移"},
+    {"name":"原色 -2",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-2.cube","desc":"强冷偏移"},
+    {"name":"原色 -S",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-S.cube","desc":"柔和风格"}
   ]},
   { "category":"📐 标准系列","presets":[
-    {"name":"标准 +1",     "url":"presets/标 柯达5207 +1.cube","desc":"暖调偏移"},
-    {"name":"标准 +2",     "url":"presets/标 柯达5207 +2.cube","desc":"强暖偏移"},
-    {"name":"标准 -1",     "url":"presets/标 柯达5207 -1.cube","desc":"冷调偏移"},
-    {"name":"标准 -2",     "url":"presets/标 柯达5207 -2.cube","desc":"强冷偏移"},
-    {"name":"标准 -S",     "url":"presets/标 柯达5207 -S.cube","desc":"柔和风格"}
+    {"name":"标准 +1",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube","desc":"暖调偏移"},
+    {"name":"标准 +2",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube","desc":"强暖偏移"},
+    {"name":"标准 -1",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-1.cube","desc":"冷调偏移"},
+    {"name":"标准 -2",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-2.cube","desc":"强冷偏移"},
+    {"name":"标准 -S",     "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-S.cube","desc":"柔和风格"}
   ]},
   { "category":"📏 标准II系列","presets":[
-    {"name":"标II +1",    "url":"presets/标2 柯达5207 +1.cube","desc":"暖调偏移"},
-    {"name":"标II +2",    "url":"presets/标2 柯达5207 +2.cube","desc":"强暖偏移"},
-    {"name":"标II -1",    "url":"presets/标2 柯达5207 -1.cube","desc":"冷调偏移"},
-    {"name":"标II -2",    "url":"presets/标2 柯达5207 -2.cube","desc":"强冷偏移"},
-    {"name":"标II -S",    "url":"presets/标2 柯达5207 -S.cube","desc":"柔和风格"}
+    {"name":"标II +1",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube","desc":"暖调偏移"},
+    {"name":"标II +2",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube","desc":"强暖偏移"},
+    {"name":"标II -1",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-1.cube","desc":"冷调偏移"},
+    {"name":"标II -2",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-2.cube","desc":"强冷偏移"},
+    {"name":"标II -S",    "url":"https://raw.githubusercontent.com/chenweioo/film-lab/master/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-S.cube","desc":"柔和风格"}
   ]}
 ]
