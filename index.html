@@ -2293,6 +2293,9 @@
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
+          // pure-blue test proved WebGL RGB pipeline correct.
+          // cube files render red → data is stored BGR by DaVinci.
+          for (var si=0,sl=cubeD.data.length;si<sl;si+=3){var t=cubeD.data[si];cubeD.data[si]=cubeD.data[si+2];cubeD.data[si+2]=t;}
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
