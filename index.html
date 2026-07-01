@@ -2291,11 +2291,22 @@
           var resp = await fetch(filter.url, {cache:'no-cache'});
           if (!resp.ok) throw new Error('H'+resp.status);
           var text = await resp.text();
+          // Validate: check first non-comment line
+          var firstLine = text.split('\n').filter(function(l){return l.trim() && l[0]!=='#  ';})[0]||'';
+          if (firstLine.indexOf('LUT_3D_SIZE')<0 && firstLine.indexOf('TITLE')<0) throw new Error('不是cube文件: '+firstLine.slice(0,30));
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          // pure-blue test proved WebGL RGB pipeline correct.
-          // cube files render red → data is stored BGR by DaVinci.
-          for (var si=0,sl=cubeD.data.length;si<sl;si+=3){var t=cubeD.data[si];cubeD.data[si]=cubeD.data[si+2];cubeD.data[si+2]=t;}
+          // Read mid-gray from PARSED data (before any swap)
+          var midIdx = (16*cubeD.size*cubeD.size + 16*cubeD.size + 16)*3;
+          var pR = cubeD.data[midIdx], pG = cubeD.data[midIdx+1], pB = cubeD.data[midIdx+2];
+          showToast('中灰: R'+pR.toFixed(2)+' G'+pG.toFixed(2)+' B'+pB.toFixed(2));
+          // Known N 5207.cube: R≈0.58 G≈0.65 B≈0.65 (warm).
+          // If pR≈0.65 pB≈0.58 → parsed as BGR → swap needed.
+          var needSwap = isFinite(pR) && isFinite(pB) && (pB - pR) > 0.05;
+          if (needSwap) {
+            showToast(pR.toFixed(2)+'/'+pB.toFixed(2)+'→swap');
+            for (var si=0,sl=cubeD.data.length;si<sl;si+=3){var t=cubeD.data[si];cubeD.data[si]=cubeD.data[si+2];cubeD.data[si+2]=t;}
+          }
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
