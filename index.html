@@ -1897,7 +1897,7 @@
       let size = 33;
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toUpperCase().startsWith('LUT_3D_SIZE')) {
-          const m = lines[i].match(/(\d+)/); if (m) size = parseInt(m[1]);
+          const m = lines[i].match(/LUT_3D_SIZE\s+(\d+)/i) || lines[i].match(/\d+$/); if (m) size = parseInt(m[1] || '33');
           lines.splice(i, 1); break;
         }
       }
@@ -2293,9 +2293,6 @@
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          // Pure-blue test proved WebGL pipeline is RGB.
-          // This cube file produces red → DaVinci stored it BGR → swap R↔B.
-          for (var i=0;i<cubeD.data.length;i+=3){var t=cubeD.data[i];cubeD.data[i]=cubeD.data[i+2];cubeD.data[i+2]=t;}
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
