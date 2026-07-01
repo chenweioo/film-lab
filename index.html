@@ -1364,24 +1364,16 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // Trilinear 3D LUT lookup (mode 8)
-      // Texture packed as: row = r*N + g, col = b (matches .cube R-slowest B-fastest order).
-      // GPU LINEAR filter gives bilinear interpolation on B (x-axis) + G (y-axis within each r-slice).
-      // Mixing two r-slices completes full 8-point trilinear.
+      // Simple nearest-neighbor 3D LUT lookup (mode 8)
+      // Verify colors match .cube file before adding interpolation.
       vec3 sample3DLUT(vec3 rgb) {
         float N = u_lut3dSize;
-        float rIdx = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
-        float gIdx = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
-        float bIdx = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
-        float r0 = floor(rIdx), fracR = rIdx - r0;
-        float x = (bIdx + 0.5) / N;
-        float y0 = (r0 * N + gIdx + 0.5) / (N * N);
-        float y1 = ((r0 + 1.0) * N + gIdx + 0.5) / (N * N);
-        return mix(
-          texture2D(u_lut3d, vec2(x, y0)).rgb,
-          texture2D(u_lut3d, vec2(x, y1)).rgb,
-          fracR
-        );
+        float r0 = floor(clamp(rgb.r, 0.0, 1.0) * (N - 1.0) + 0.5);
+        float g0 = floor(clamp(rgb.g, 0.0, 1.0) * (N - 1.0) + 0.5);
+        float b0 = floor(clamp(rgb.b, 0.0, 1.0) * (N - 1.0) + 0.5);
+        float x = (b0 + 0.5) / N;
+        float y = (r0 * N + g0 + 0.5) / (N * N);
+        return texture2D(u_lut3d, vec2(x, y)).rgb;
       }
 
       // Parameterized preset from uniforms (mode >= 7)
@@ -1693,8 +1685,8 @@
           }
         }
       }
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
