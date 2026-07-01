@@ -2304,12 +2304,9 @@
           showToast('解析中: '+text.length+'字节');
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('parse failed');
-          showToast('LUT:'+cubeD.size+'³');
-          // .cube from DaVinci is BGR order — swap R↔B to match WebGL RGBA buffer
-          var srcArr = cubeD.data;
-          for (var si = 0; si < srcArr.length; si += 3) {
-            var tmp = srcArr[si]; srcArr[si] = srcArr[si+2]; srcArr[si+2] = tmp;
-          }
+          // Diagnostic: read mid-gray value from parsed .cube
+          var N=cubeD.size, midR=cubeD.data[(16*N*N+16*N+16)*3], midG=cubeD.data[(16*N*N+16*N+16)*3+1], midB=cubeD.data[(16*N*N+16*N+16)*3+2];
+          showToast('LUT:'+cubeD.size+'³ 中灰R:'+midR.toFixed(2)+' G:'+midG.toFixed(2)+' B:'+midB.toFixed(2));
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
@@ -2771,7 +2768,6 @@
         const cubeData = parseCubeFile(text);
         if (!cubeData || cubeData.size < 2) { showToast('无效的 .cube 文件格式'); return; }
         // .cube from DaVinci uses BGR — swap R↔B
-        for (var si = 0; si < cubeData.data.length; si += 3) { var t = cubeData.data[si]; cubeData.data[si] = cubeData.data[si+2]; cubeData.data[si+2] = t; }
         const name = file.name.replace(/\.cube$/i, '').replace(/[_-]/g, ' ').trim() || '自定义 LUT';
         const id = 'cube-local-' + Date.now();
         const fakeUrl = 'cube://' + file.name + '/' + Date.now();
