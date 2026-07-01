@@ -2292,9 +2292,6 @@
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          // DaVinci cube BGR → RGB
-          var d=cubeD.data,l=d.length;
-          for(var si=0;si<l;si+=3){var t=d[si];d[si]=d[si+2];d[si+2]=t;}
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
