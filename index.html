@@ -2751,7 +2751,6 @@
         const text = await new Promise((r) => { const fr = new FileReader(); fr.onload = (e) => r(e.target.result); fr.readAsText(file); });
         const cubeData = parseCubeFile(text);
         if (!cubeData || cubeData.size < 2) { showToast('无效的 .cube 文件格式'); return; }
-        // .cube from DaVinci uses BGR — swap R↔B
         const name = file.name.replace(/\.cube$/i, '').replace(/[_-]/g, ' ').trim() || '自定义 LUT';
         const id = 'cube-local-' + Date.now();
         const fakeUrl = 'cube://' + file.name + '/' + Date.now();
