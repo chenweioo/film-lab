@@ -2303,6 +2303,8 @@
           var text = await resp.text();
           var cubeD = parseCubeFile(text);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
+          // DaVinci .cube files use BGR — swap to match GPU RGB hardware
+          for (var i=0;i<cubeD.data.length;i+=3){var tmp=cubeD.data[i];cubeD.data[i]=cubeD.data[i+2];cubeD.data[i+2]=tmp;}
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
