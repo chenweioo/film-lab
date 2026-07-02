@@ -1091,7 +1091,7 @@
 
     const MAX_IMAGE_DIM = 2048;
     const DB_NAME = 'FilmLabDB';
-    const DB_VERSION = 3;
+    const DB_VERSION = 4; // bumped to purge old cache from parseCubeFile bug
     const STORE_LUTS = 'luts';
     const STORE_CUSTOM = 'custom_filters';
     const STORE_CUBE = 'cube_cache';
@@ -1168,9 +1168,10 @@
           if (!db.objectStoreNames.contains(STORE_CUSTOM)) {
             db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
           }
-          if (!db.objectStoreNames.contains(STORE_CUBE)) {
-            db.createObjectStore(STORE_CUBE, { keyPath: 'url' });
+          if (db.objectStoreNames.contains(STORE_CUBE)) {
+            db.deleteObjectStore(STORE_CUBE); // purge old parse-bug cache
           }
+          db.createObjectStore(STORE_CUBE, { keyPath: 'url' });
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -1873,21 +1874,13 @@
     }
 
     async function loadCubeFromServer(url) {
-      // Check IndexedDB cache first
-      const cached = await dbGet(url, 'cube_cache');
-      if (cached && cached.data) {
-        const arr = new Float32Array(cached.data);
-        return { size: cached.size, data: arr };
-      }
-      // Download from server
-      const resp = await fetch(url);
+      // Download from server (DB_VERSION bump purged old cache; v=2 bypass CDN)
+      const resp = await fetch(url + (url.includes('?')?'&':'?') + 'v=4', {cache:'no-store'});
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const text = await resp.text();
       const cubeData = parseCubeFile(text);
-      // Cache to IndexedDB
-      try {
-        await dbSet('cube_cache', url, { size: cubeData.size, data: Array.from(cubeData.data), url });
-      } catch (e) {}
+      // Save to in-memory cache for this session only
+      lutCache[url] = text;
       return cubeData;
     }
 
@@ -2298,13 +2291,9 @@
       if (filter.isCube && filter.isServerPreset) {
         showPreviewLoading();
         try {
-          var resp = await fetch(filter.url+'?v=0702', {cache:'no-store'});
-          if (!resp.ok) throw new Error('H'+resp.status);
-          var text = await resp.text();
-          var cubeD = parseCubeFile(text);
+          var cubeD = await loadCubeFromServer(filter.url);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          // DaVinci .cube files use BGR — swap to match GPU RGB hardware
-          for (var i=0;i<cubeD.data.length;i+=3){var tmp=cubeD.data[i];cubeD.data[i]=cubeD.data[i+2];cubeD.data[i+2]=tmp;}
+          showToast(cubeD.size+'^3 '+cubeD.data.length/3+'pts');
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
