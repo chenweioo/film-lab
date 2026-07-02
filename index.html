@@ -2294,6 +2294,8 @@
           var cubeD = await loadCubeFromServer(filter.url);
           if (!cubeD || cubeD.size<2) throw new Error('fmt');
           showToast(cubeD.size+'^3 '+cubeD.data.length/3+'pts');
+          // DaVinci .cube stores BGR, GPU expects RGB — swap R↔B
+          for (var si=0;si<cubeD.data.length;si+=3){var t=cubeD.data[si];cubeD.data[si]=cubeD.data[si+2];cubeD.data[si+2]=t;}
           var texInfo = create3DLUTTexture(cubeD);
           set3DLUTTexture(texInfo.tex, texInfo.size);
           currentMode = 8; render(8);
