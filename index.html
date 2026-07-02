@@ -2979,51 +2979,46 @@
     }
 
     // ===================== INIT =====================
-    async function init() {
-      var diag = document.getElementById('category-bar');
-      function step(msg) { try { if(diag){diag.classList.remove('hidden');diag.innerHTML='<span style=\"color:#c4956a\">⏳ '+msg+'</span>';} } catch(_){} }
+    function init() {
+      // 1. Render filter cards IMMEDIATELY (synchronous, no dependencies)
+      try { renderFilterCards(); } catch(e) { console.error(e); }
 
-      step('启动中...');
-
-      // Initialize IndexedDB
-      try { dbPromise = openDB(); await dbPromise; step('DB OK'); } catch (e) { dbPromise = null; step('DB 跳过'); }
-
-      // Load custom filters from IndexedDB
-      const savedCustom = await dbGetCustomFilters();
-      customFilters = savedCustom.map(cf => {
-        const isCube = cf.url && cf.url.startsWith('cube://');
-        if (isCube && cf.cubeText) { lutCache[cf.url] = cf.cubeText; }
-        return { id: cf.id, name: cf.name, url: cf.url, isCustom: true, isCube };
-      });
-      customFilters.forEach(cf => {
-        filterStates[cf.id] = cf.isCube ? { loaded: true, error: false, thumbDataUrl: null } : { loaded: false, error: false, thumbDataUrl: null };
-      });
-
-      // Init WebGL
+      // 2. WebGL (synchronous)
       resizeCanvas();
-      step('WebGL...');
-      if (!initWebGL()) { step('WebGL失败'); return; }
+      try { initWebGL(); } catch(e) { console.error(e); }
+      try { initThumbGL(); } catch(e) {}
 
-      // Init thumb GL (optional)
-      try { initThumbGL(); } catch (e) { thumbGL = null; }
-      step('GL OK');
+      // 3. Clear canvas
+      try { clearCanvas(); } catch(e) {}
 
-      // Load server presets.json
-      try { presetCategories = await loadPresetsJson(); } catch(e) { presetCategories = []; }
-      step('JSON:'+presetCategories.length+'类');
+      // 4. Category bar (may be empty if no presets.json)
+      try { renderCategoryBar(); } catch(e) {}
 
-      // Render filter cards and category bar
-      renderFilterCards();
-      renderCategoryBar();
-      step('就绪');
-      setTimeout(function(){ if(diag){diag.classList.add('hidden');} }, 1500);
+      // 5. PWA manifest only
+      try { registerPWA(); } catch(e) {}
 
-      // Register PWA
-      registerPWA();
-      clearCanvas();
+      // 6. Background: IndexedDB + presets.json
+      setTimeout(function() {
+        (async function() {
+          try { dbPromise = openDB(); await dbPromise; } catch(e) { dbPromise = null; }
+          var savedCustom = [];
+          try { savedCustom = await dbGetCustomFilters(); } catch(e) {}
+          customFilters = savedCustom.map(function(cf) {
+            var isCube = cf.url && cf.url.startsWith('cube://');
+            if (isCube && cf.cubeText) lutCache[cf.url] = cf.cubeText;
+            return { id: cf.id, name: cf.name, url: cf.url, isCustom: true, isCube: isCube };
+          });
+          customFilters.forEach(function(cf) {
+            filterStates[cf.id] = cf.isCube ? { loaded: true, error: false, thumbDataUrl: null } : { loaded: false, error: false, thumbDataUrl: null };
+          });
+          try { presetCategories = await loadPresetsJson(); } catch(e) {}
+          renderFilterCards();
+          renderCategoryBar();
+        })().catch(function(){});
+      }, 200);
     }
 
-    init().catch(function(e){ console.error('Init crash:',e); });
+    init();
   })();
   </script>
 </body>
