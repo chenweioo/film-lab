@@ -1089,7 +1089,7 @@
       { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] },
     ];
 
-    const MAX_IMAGE_DIM = 2048;
+    const MAX_IMAGE_DIM = 4096; // preserve detail for high-res export
     const DB_NAME = 'FilmLabDB';
     const DB_VERSION = 4; // bumped to purge old cache from parseCubeFile bug
     const STORE_LUTS = 'luts';
@@ -2464,89 +2464,63 @@
 
     let savedBlob = null;  // kept for share button
 
-    async function saveImage() {
-      if (!glSourceTex) {
-        showToast('请先选择照片');
-        return;
-      }
+    function saveImage() {
+      if (!glSourceTex || !sourceImage) { showToast('请先选择照片'); return; }
+      showToast('正在导出高画质…');
 
-      try {
-        // 1. Render current filter to canvas
-        render(currentMode);
-        await new Promise(r => setTimeout(r, 150));
+      const srcW = sourceImage.naturalWidth, srcH = sourceImage.naturalHeight;
+      const origW = els.glCanvas.width, origH = els.glCanvas.height;
 
-        // 2. Extract from WebGL canvas
-        const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
-        if (!dataUrl || dataUrl === 'data:,') {
-          showToast('导出失败，请重试');
-          return;
-        }
+      // Scale canvas to match source resolution (max 4096 on long edge)
+      let outW, outH;
+      const MAX_LONG = 4096;
+      if (srcW >= srcH) { outW = Math.min(srcW, MAX_LONG); outH = Math.round(outW * srcH / srcW); }
+      else { outH = Math.min(srcH, MAX_LONG); outW = Math.round(outH * srcW / srcH); }
 
-        // 3. Show in full-screen overlay — user long-presses to save
+      els.glCanvas.width = outW; els.glCanvas.height = outH;
+      gl.viewport(0, 0, outW, outH);
+      updateQuadVerts(srcW, srcH); // keep aspect ratio on larger canvas
+      render(currentMode);
+
+      // Wait for GPU flush
+      setTimeout(function() {
+        // Extract at high quality
+        var dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.95);
+        var blob = dataURLtoBlob(dataUrl);
+        var sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+
+        // Show in overlay
         els.saveResultImg.src = dataUrl;
         els.saveOverlay.classList.add('open');
 
-        // 4. Prepare blob for share button
-        try {
-          const resp = await fetch(dataUrl);
-          savedBlob = await resp.blob();
-        } catch (e) {
-          savedBlob = null;
-        }
+        // Trigger download
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'film-sim-' + Date.now() + '.jpg';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
 
+        // Restore canvas
+        els.glCanvas.width = origW; els.glCanvas.height = origH;
+        gl.viewport(0, 0, origW, origH);
+        updateQuadVerts(srcW, srcH);
+        render(currentMode);
+
+        showToast('已保存 ' + sizeMB + 'MB');
         track('save', getCurrentFilterName());
-
-      } catch (e) {
-        console.error('Save error:', e);
-        showToast('保存失败，请重试');
-      }
+      }, 200);
     }
 
-    function closeSaveOverlay() {
-      els.saveOverlay.classList.remove('open');
-      // Don't revoke — dataUrl is managed by browser
-      savedBlob = null;
+    function dataURLtoBlob(dataurl) {
+      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+      var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+      return new Blob([u8arr], {type:mime});
     }
 
-    async function shareSavedImage() {
-      if (!savedBlob || savedBlob.size < 100) {
-        // Re-grab from canvas
-        try {
-          const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
-          const resp = await fetch(dataUrl);
-          savedBlob = await resp.blob();
-        } catch (e) {
-          showToast('分享失败，请长按图片保存');
-          return;
-        }
-      }
+    function closeSaveOverlay() { els.saveOverlay.classList.remove('open'); }
 
-      const filename = 'film-sim-' + Date.now() + '.jpg';
-      const file = new File([savedBlob], filename, { type: 'image/jpeg' });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file] });
-          showToast('已分享');
-          return;
-        } catch (e) {
-          // User cancelled — fall through
-          if (e.name !== 'AbortError') {
-            console.warn('Share error:', e);
-          }
-        }
-      }
-
-      // Fallback for Android: trigger download link
-      const url = URL.createObjectURL(savedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('图片已下载');
+    function getCurrentFilterName() {
+      return [...FILTERS, ...customFilters].find(function(f){return f.id === currentFilterId;})?.name || '';
     }
 
     function getCurrentFilterName() {
