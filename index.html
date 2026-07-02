@@ -1091,7 +1091,7 @@
 
     const MAX_IMAGE_DIM = 4096; // preserve detail for high-res export
     const DB_NAME = 'FilmLabDB';
-    const DB_VERSION = 4; // bumped to purge old cache from parseCubeFile bug
+    const DB_VERSION = 5; // forced rebuild: v4 cube cache was tainted by parse bug
     const STORE_LUTS = 'luts';
     const STORE_CUSTOM = 'custom_filters';
     const STORE_CUBE = 'cube_cache';
@@ -1162,15 +1162,13 @@
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_LUTS)) {
-            db.createObjectStore(STORE_LUTS, { keyPath: 'url' });
+          // Purge all old data on version bump to clear parse-bug corrupted caches
+          var names = Array.from(db.objectStoreNames);
+          for (var n = 0; n < names.length; n++) {
+            try { db.deleteObjectStore(names[n]); } catch(ignore) {}
           }
-          if (!db.objectStoreNames.contains(STORE_CUSTOM)) {
-            db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
-          }
-          if (db.objectStoreNames.contains(STORE_CUBE)) {
-            db.deleteObjectStore(STORE_CUBE); // purge old parse-bug cache
-          }
+          db.createObjectStore(STORE_LUTS, { keyPath: 'url' });
+          db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
           db.createObjectStore(STORE_CUBE, { keyPath: 'url' });
         };
         req.onsuccess = () => resolve(req.result);
@@ -2979,26 +2977,28 @@
       if (!('serviceWorker' in navigator)) return;
 
       const swCode = `
-        const CACHE = 'film-lab-v2';
+        const CACHE = 'film-lab-v5';
         self.addEventListener('install', (e) => {
-          e.waitUntil(
-            caches.open(CACHE).then(cache => cache.add(self.location.href).catch(() => {}))
-          );
+          e.waitUntil(caches.open(CACHE).then(cache => cache.add(self.location.href).catch(function(){})));
           self.skipWaiting();
         });
         self.addEventListener('activate', (e) => {
-          e.waitUntil(self.clients.claim());
+          e.waitUntil(
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.filter(function(k) { return k !== CACHE; }).map(function(k) { return caches.delete(k); }));
+            }).then(function() { return self.clients.claim(); })
+          );
         });
         self.addEventListener('fetch', (e) => {
           if (e.request.method !== 'GET') return;
+          // Never cache .cube or .json files — always fetch fresh
+          if (e.request.url.match(/\\.(cube|json)(\\?|$)/)) { return; }
           e.respondWith(
-            caches.match(e.request).then(cached => {
-              const fetched = fetch(e.request).then(resp => {
-                if (resp.ok) {
-                  caches.open(CACHE).then(cache => cache.put(e.request, resp.clone()));
-                }
+            caches.match(e.request).then(function(cached) {
+              const fetched = fetch(e.request).then(function(resp) {
+                if (resp.ok) { caches.open(CACHE).then(function(cache) { cache.put(e.request, resp.clone()); }); }
                 return resp;
-              }).catch(() => cached);
+              }).catch(function() { return cached; });
               return cached || fetched;
             })
           );
