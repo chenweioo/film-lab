@@ -1010,23 +1010,7 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <script>
-  (function() {
-    'use strict';
-
-    // ===================== FORCE SW KILL (caches poison older deploys) =====================
-    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
-      });
-    }
-    if (window.caches) {
-      try { caches.keys().then(function(keys) { for (var i = 0; i < keys.length; i++) caches.delete(keys[i]); }); } catch(e) {}
-    }
-
-    // ===================== POLYFILLS =====================
+  </div><script>// ===================== POLYFILLS =====================
     // canvas.toBlob (Safari < 14)
     if (!HTMLCanvasElement.prototype.toBlob) {
       HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
@@ -2936,90 +2920,12 @@
     }, { passive: false });
 
     // ===================== PWA REGISTRATION =====================
-    function registerPWA() {
-      // Service workers require HTTPS or localhost — skip on file://
-      const isFileProtocol = location.protocol === 'file:';
-      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    // ===================== INIT// ===================== INIT =====================
+    // init removed — direct boot
 
-      // Always inject manifest (works anywhere)
-      const manifest = {
-        name: '胶片模拟 Lab',
-        short_name: '胶片Lab',
-        description: '用数字的方式，感受银盐的温度',
-        start_url: location.href.split('?')[0].split('#')[0],
-        display: 'standalone',
-        background_color: '#1e1812',
-        theme_color: '#1e1812',
-        orientation: 'any',
-        icons: [
-          {
-            src: 'data:image/svg+xml,' + encodeURIComponent(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">' +
-              '<rect width="192" height="192" rx="32" fill="#1e1812"/>' +
-              '<rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/>' +
-              '<circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/>' +
-              '<circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/>' +
-              '<rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/>' +
-              '<text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text>' +
-              '</svg>'
-            ),
-            sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          }
-        ]
-      };
-
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const manifestUrl = URL.createObjectURL(manifestBlob);
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = manifestUrl;
-      document.head.appendChild(link);
-    }
-
-    // ===================== INIT =====================
-    function init() {
-      // 1. Render filter cards IMMEDIATELY (synchronous, no dependencies)
-      try { renderFilterCards(); } catch(e) { console.error(e); }
-
-      // 2. WebGL (synchronous)
-      resizeCanvas();
-      try { initWebGL(); } catch(e) { console.error(e); }
-      try { initThumbGL(); } catch(e) {}
-
-      // 3. Clear canvas
-      try { clearCanvas(); } catch(e) {}
-
-      // 4. Category bar (may be empty if no presets.json)
-      try { renderCategoryBar(); } catch(e) {}
-
-      // 5. PWA manifest only
-      try { registerPWA(); } catch(e) {}
-
-      // 6. Background: IndexedDB + presets.json
-      setTimeout(function() {
-        (async function() {
-          try { dbPromise = openDB(); await dbPromise; } catch(e) { dbPromise = null; }
-          var savedCustom = [];
-          try { savedCustom = await dbGetCustomFilters(); } catch(e) {}
-          customFilters = savedCustom.map(function(cf) {
-            var isCube = cf.url && cf.url.startsWith('cube://');
-            if (isCube && cf.cubeText) lutCache[cf.url] = cf.cubeText;
-            return { id: cf.id, name: cf.name, url: cf.url, isCustom: true, isCube: isCube };
-          });
-          customFilters.forEach(function(cf) {
-            filterStates[cf.id] = cf.isCube ? { loaded: true, error: false, thumbDataUrl: null } : { loaded: false, error: false, thumbDataUrl: null };
-          });
-          try { presetCategories = await loadPresetsJson(); } catch(e) {}
-          renderFilterCards();
-          renderCategoryBar();
-        })().catch(function(){});
-      }, 200);
-    }
-
-    init();
-  })();
-  </script>
+    // Direct boot
+renderFilterCards();
+renderCategoryBar();
+clearCanvas();</script>
 </body>
 </html>
