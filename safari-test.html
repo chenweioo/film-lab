@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>测试</title>
+<style>body{margin:0;background:#1e1812;color:#f0e6d3;font:16px system-ui;padding:10px}
+#banner{background:#c4956a;color:#1e1812;padding:8px;text-align:center;border-radius:8px;margin-bottom:10px;display:none;font-weight:bold}
+canvas{width:100%;height:auto;border:2px solid #c4956a;border-radius:8px;margin-bottom:10px}
+.btn{display:block;width:100%;padding:14px;margin:8px 0;background:#c4956a;color:#1e1812;border:none;border-radius:28px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
+.card{display:inline-block;padding:10px 16px;margin:4px;background:#2a1f14;border:2px solid #3a2a18;border-radius:8px;color:#f0e6d3;cursor:pointer;font-size:14px}
+.card.active{border-color:#c4956a;background:#342818}
+#log{margin-top:10px;font-size:12px;color:#a09080;max-height:120px;overflow-y:auto}
+.green{color:#0f0}.red{color:#f00}.yellow{color:#ff0}
+</style></head><body>
+<h2>📷 胶片Lab 最小测试</h2>
+<div id="banner"></div>
+<canvas id="c" width="400" height="300"></canvas>
+<input type="file" id="file" accept="image/*" style="display:none">
+<button class="btn" onclick="document.getElementById('file').click()">📁 选照片</button>
+<div id="filters"></div>
+<div id="log"></div>
+
+<script>
+(function(){
+var banner=document.getElementById('banner');
+function show(msg,color){
+  banner.style.display='block';banner.style.background=color||'#c4956a';banner.textContent=msg;
+}
+function log(msg,color){
+  var d=document.getElementById('log');
+  d.innerHTML+='<div class="'+(color||'')+'">'+msg+'</div>';
+  d.scrollTop=d.scrollHeight;
+}
+
+// 1. WebGL check
+var canvas=document.getElementById('c');
+var gl=null;
+try{
+  gl=canvas.getContext('webgl2',{preserveDrawingBuffer:true})||
+     canvas.getContext('webgl',{preserveDrawingBuffer:true})||
+     canvas.getContext('experimental-webgl',{preserveDrawingBuffer:true});
+}catch(e){}
+if(!gl){show('❌ 浏览器不支持WebGL','#c05555');log('WebGL: FAIL','red');}else{log('WebGL: OK ✓','green');}
+
+// 2. Shader compile test
+var vs=gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vs,'attribute vec2 a;attribute vec2 t;varying vec2 v;void main(){gl_Position=vec4(a,0,1);v=t;}');
+gl.compileShader(vs);
+var fs=gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fs,'precision highp float;varying vec2 v;uniform sampler2D s;void main(){gl_FragColor=texture2D(s,v);}');
+gl.compileShader(fs);
+var ok=gl.getShaderParameter(fs,gl.COMPILE_STATUS);
+if(!ok){show('❌ Shader编译失败: '+gl.getShaderInfoLog(fs),'#c05555');log('Shader: FAIL','red');}
+else{log('Shader: OK ✓','green');}
+
+// 3. Filters test: built-in GLSL presets
+var FILTERS=[
+  {id:'provia100f',name:'富士 Provia 100F',preset:1},
+  {id:'velvia50',name:'富士 Velvia 50',preset:2},
+  {id:'portra160nc',name:'柯达 Portra 160 NC',preset:3},
+  {id:'ektar100',name:'柯达 Ektar 100',preset:4},
+  {id:'hp5plus400',name:'伊尔福 HP5 Plus 400',preset:5}
+];
+var filterDiv=document.getElementById('filters');
+FILTERS.forEach(function(f){
+  var btn=document.createElement('span');
+  btn.className='card';btn.textContent=f.name;
+  btn.onclick=function(){selectFilter(f,btn);};
+  filterDiv.appendChild(btn);
+});
+log('Filters: '+FILTERS.length+' cards rendered','green');
+
+var sourceTex=null,currentFilter=null;
+function selectFilter(f,btn){
+  if(btn)document.querySelectorAll('.card').forEach(function(el){el.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  currentFilter=f;
+  log('Selected: '+f.name,'yellow');
+  if(sourceTex)runShader();
+}
+
+// 4. File upload test
+document.getElementById('file').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  log('Loading: '+f.name+' ('+(f.size/1024).toFixed(0)+'KB)','yellow');
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      log('Image loaded: '+img.naturalWidth+'x'+img.naturalHeight,'green');
+      canvas.width=400;canvas.height=300;
+      gl.viewport(0,0,400,300);
+      // Upload to WebGL
+      sourceTex=gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D,sourceTex);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+      log('Texture uploaded ✓','green');
+      show('✅ 基础功能正常 - 选择滤镜','#4a8');
+      if(currentFilter)runShader();
+      else{gl.clearColor(0.12,0.09,0.07,1);gl.clear(gl.COLOR_BUFFER_BIT);}
+    };
+    img.onerror=function(){log('Image load FAILED','red');};
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
+});
+
+function runShader(){
+  if(!sourceTex||!currentFilter)return;
+  var prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);
+  gl.useProgram(prog);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sourceTex);
+  gl.uniform1i(gl.getUniformLocation(prog,'s'),0);
+  var pb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pb);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  var tb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,tb);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,1,1,1,0,0,1,0]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+
+log('✅ 页面加载完毕 - 请点击滤镜卡片','green');
+show('✅ 测试页就绪 - 请选照片','#4a8');
+})();
+</script></body></html>
