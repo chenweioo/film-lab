@@ -1,0 +1,105 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cube Verify</title>
+<style>body{background:#111;color:#fff;font:14px monospace;padding:10px}canvas{max-width:100%}.ok{color:#0f0}.fail{color:#f00}.info{color:#ff0}</style></head><body>
+<h2>Cube Pipeline Local Verification</h2>
+<div id="log"></div>
+<canvas id="c" width="256" height="256"></canvas>
+<script>
+function L(m,c){document.getElementById('log').innerHTML+='<div class="'+c+'">'+m+'</div>';}
+var gl=c.getContext('webgl2',{preserveDrawingBuffer:true})||c.getContext('webgl',{preserveDrawingBuffer:true})||c.getContext('experimental-webgl',{preserveDrawingBuffer:true});
+if(!gl){L('WebGL不可用','fail');}else{L('WebGL OK','ok');}
+
+// Build a test gradient image
+var ctx=document.createElement('canvas').getContext('2d');ctx.canvas.width=256;ctx.canvas.height=256;
+var g=ctx.createLinearGradient(0,0,256,256);
+g.addColorStop(0,'red');g.addColorStop(0.2,'green');g.addColorStop(0.4,'blue');
+g.addColorStop(0.5,'gray');g.addColorStop(0.6,'yellow');g.addColorStop(0.8,'cyan');g.addColorStop(1,'white');
+ctx.fillStyle=g;ctx.fillRect(0,0,256,256);
+var testImg=ctx.getImageData(0,0,256,256);
+
+// Build IDENTITY 33³ LUT
+function buildIdentity(N){
+  var d=new Float32Array(N*N*N*3);
+  for(var r=0;r<N;r++)for(var g=0;g<N;g++)for(var b=0;b<N;b++){
+    var i=(r*N*N+g*N+b)*3;d[i]=r/(N-1);d[i+1]=g/(N-1);d[i+2]=b/(N-1);
+  }
+  return {size:N,data:d};
+}
+
+// Upload LUT to WebGL texture
+function uploadLUT(cube){
+  var N=cube.size,src=cube.data;gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+  var t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  var px=new Uint8Array(N*N*N*4);
+  for(var r=0;r<N;r++)for(var g=0;g<N;g++)for(var b=0;b<N;b++){
+    var si=(r*N*N+g*N+b)*3,di=((r*N+g)*N+b)*4;
+    px[di]=Math.round(Math.max(0,Math.min(1,src[si]))*255);
+    px[di+1]=Math.round(Math.max(0,Math.min(1,src[si+1]))*255);
+    px[di+2]=Math.round(Math.max(0,Math.min(1,src[si+2]))*255);
+    px[di+3]=255;
+  }
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,N,N*N,0,gl.RGBA,gl.UNSIGNED_BYTE,px);
+  return {tex:t,size:N};
+}
+
+// Shader
+var vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,'attribute vec2 a;attribute vec2 t;varying vec2 v;void main(){gl_Position=vec4(a,0,1);v=t;}');gl.compileShader(vs);
+var fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,'precision highp float;varying vec2 v;uniform sampler2D src;uniform sampler2D lut3d;uniform float sz;'+
+'vec3 sampleLUT(vec3 rgb){float N=sz;float rI=clamp(rgb.r*(N-1.),0.,N-1.0001);float gI=clamp(rgb.g*(N-1.),0.,N-1.0001);float bI=clamp(rgb.b*(N-1.),0.,N-1.0001);'+
+'float r0=floor(rI),fR=rI-r0;float x=(bI+.5)/N;float y0=(r0*N+gI+.5)/(N*N);float y1=((r0+1.)*N+gI+.5)/(N*N);'+
+'return mix(texture2D(lut3d,vec2(x,y0)).rgb,texture2D(lut3d,vec2(x,y1)).rgb,fR);}'+
+'void main(){vec4 c=texture2D(src,v);gl_FragColor=vec4(sampleLUT(c.rgb),c.a);}');gl.compileShader(fs);
+if(!gl.getShaderParameter(fs,gl.COMPILE_STATUS)){L('SHADER ERR: '+gl.getShaderInfoLog(fs),'fail');}
+var prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);
+
+function render(img,lutTex,lutSize){
+  var st=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,st);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+  gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(prog);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,st);gl.uniform1i(gl.getUniformLocation(prog,'src'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,lutTex);gl.uniform1i(gl.getUniformLocation(prog,'lut3d'),1);
+  gl.uniform1f(gl.getUniformLocation(prog,'sz'),lutSize);
+  var pb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  var tb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,tb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,1,1,1,0,0,1,0]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.deleteTexture(st);gl.deleteBuffer(pb);gl.deleteBuffer(tb);
+}
+
+// Test 1: Identity LUT
+L('--- Test 1: Identity LUT ---','info');
+var idCube=buildIdentity(33);
+var idTex=uploadLUT(idCube);
+render(testImg,idTex.tex,idTex.size);
+L('Gradient should look NORMAL (same as original).','info');
+gl.deleteTexture(idTex.tex);
+
+// Test 2: Built-in EXACT parser
+L('--- Test 2: Parse .cube file with browser parser ---','info');
+fetch('presets/N%205207.cube').then(function(r){return r.text();}).then(function(text){
+  // EXACT SAME parseCubeFile code as index.html
+  var lines2=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.charAt(0)!=='#';});
+  var size2=33;
+  for(var i=0;i<lines2.length;i++){
+    if(lines2[i].toUpperCase().startsWith('LUT_3D_SIZE')){
+      var m2=lines2[i].match(/LUT_3D_SIZE\s+(\d+)/i)||lines2[i].match(/\d+$/);
+      if(m2)size2=parseInt(m2[1]||'33');lines2.splice(i,1);break;
+    }
+  }
+  var vals2=[];
+  for(var i=0;i<lines2.length;i++){var p2=lines2[i].split(/\s+/);if(p2.length>=3&&!isNaN(parseFloat(p2[0]))){vals2.push(parseFloat(p2[0]),parseFloat(p2[1]),parseFloat(p2[2]));}}
+  var exp2=size2*size2*size2*3;while(vals2.length<exp2)vals2.push(0);
+  var cube2={size:size2,data:new Float32Array(vals2.slice(0,exp2))};
+  L('Parse: '+size2+'^3, '+cube2.data.length+' values','ok');
+  var mi2=(16*size2*size2+16*size2+16)*3;
+  L('Mid-gray: R='+cube2.data[mi2].toFixed(3)+' G='+cube2.data[mi2+1].toFixed(3)+' B='+cube2.data[mi2+2].toFixed(3),'info');
+  var tex2=uploadLUT(cube2);
+  render(testImg,tex2.tex,tex2.size);
+  L('If gradient looks NATURAL (not tinted), LUT works. If blue→yellow, LUT is warm-tone by design.','info');
+}).catch(function(e){L('Fetch fail: '+e.message,'fail');});
+</script></body></html>
