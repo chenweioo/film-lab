@@ -1026,7 +1026,7 @@
     // ===================== CONSTANTS =====================
     // Built-in film presets: pure GLSL, no download needed, instant.
     // url is kept for optional manual download (available via "+" modal).
-    const FILTERS = [
+    var FILTERS = [
       { id: 'idtest', name: '🔬 身份验证', preset: 99 },
       { id: 'bluetest', name: '🔵 纯蓝测试', preset: 98 },
       { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
@@ -1037,7 +1037,7 @@
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
-    const FILM_LIBRARY = [
+    var FILM_LIBRARY = [
       { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
       { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
       { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
@@ -2775,9 +2775,10 @@
       els.pageHome.classList.toggle('active', page === 'home');
       els.pageAbout.classList.toggle('active', page === 'about');
 
-      els.navBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.page === page);
-      });
+      for (var nvI = 0; nvI < els.navBtns.length; nvI++) {
+        var nb = els.navBtns[nvI];
+        nb.classList.toggle('active', nb.dataset.page === page);
+      }
 
       if (page === 'home') {
         // Re-render after page change (WebGL canvas may have been resized)
@@ -2874,11 +2875,12 @@
     });
 
     // Nav
-    els.navBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        switchPage(btn.dataset.page);
+    for (var nvIdx = 0; nvIdx < els.navBtns.length; nvIdx++) {
+      var nvBtn = els.navBtns[nvIdx];
+      nvBtn.addEventListener('click', function(e) {
+        switchPage(e.currentTarget.dataset.page);
       });
-    });
+    }
 
     // LUT Modal
     els.lutUrlLoad.addEventListener('click', handleCustomLUTUrl);
