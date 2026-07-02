@@ -1016,6 +1016,16 @@
   (function() {
     'use strict';
 
+    // ===================== FORCE SW KILL (caches poison older deploys) =====================
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
+      });
+    }
+    if (window.caches) {
+      try { caches.keys().then(function(keys) { for (var i = 0; i < keys.length; i++) caches.delete(keys[i]); }); } catch(e) {}
+    }
+
     // ===================== POLYFILLS =====================
     // canvas.toBlob (Safari < 14)
     if (!HTMLCanvasElement.prototype.toBlob) {
