@@ -1893,17 +1893,27 @@
 
     // ===================== .CUBE PARSER =====================
     function parseCubeFile(text) {
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l && l.charAt(0)!=='#');
+      // Remove all header/meta lines; keep only numeric RGB triplets
+      const lines = text.replace(/\r/g,'').split('\n')
+        .map(function(l){return l.trim();})
+        .filter(function(l){
+          if(!l)return false;
+          if(l.charAt(0)==='#')return false;
+          var u=l.toUpperCase();
+          if(u.startsWith('TITLE')||u.startsWith('DOMAIN')||u.startsWith('LUT_3D_INPUT'))return false;
+          return true;
+        });
       let size = 33;
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toUpperCase().startsWith('LUT_3D_SIZE')) {
-          const m = lines[i].match(/LUT_3D_SIZE\s+(\d+)/i) || lines[i].match(/\d+$/); if (m) size = parseInt(m[1] || '33');
+          const m = lines[i].match(/LUT_3D_SIZE\s+(\d+)/i) || lines[i].match(/\d+$/);
+          if (m) size = parseInt(m[1] || '33');
           lines.splice(i, 1); break;
         }
       }
       const vals = [];
-      for (const l of lines) {
-        const p = l.trim().split(/\s+/);
+      for (let i = 0; i < lines.length; i++) {
+        const p = lines[i].split(/\s+/);
         if (p.length >= 3 && !isNaN(parseFloat(p[0]))) {
           vals.push(parseFloat(p[0]), parseFloat(p[1]), parseFloat(p[2]));
         }
