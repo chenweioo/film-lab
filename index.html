@@ -2980,14 +2980,13 @@
 
     // ===================== INIT =====================
     async function init() {
+      var diag = document.getElementById('category-bar');
+      function step(msg) { try { if(diag){diag.classList.remove('hidden');diag.innerHTML='<span style=\"color:#c4956a\">⏳ '+msg+'</span>';} } catch(_){} }
+
+      step('启动中...');
+
       // Initialize IndexedDB
-      try {
-        dbPromise = openDB();
-        await dbPromise;
-      } catch (e) {
-        console.warn('IndexedDB not available, using in-memory cache');
-        dbPromise = null;
-      }
+      try { dbPromise = openDB(); await dbPromise; step('DB OK'); } catch (e) { dbPromise = null; step('DB 跳过'); }
 
       // Load custom filters from IndexedDB
       const savedCustom = await dbGetCustomFilters();
@@ -3002,40 +3001,29 @@
 
       // Init WebGL
       resizeCanvas();
-      if (!initWebGL()) {
-        showToast('WebGL 初始化失败');
-        return;
-      }
+      step('WebGL...');
+      if (!initWebGL()) { step('WebGL失败'); return; }
 
-      // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
-      try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
+      // Init thumb GL (optional)
+      try { initThumbGL(); } catch (e) { thumbGL = null; }
+      step('GL OK');
 
       // Load server presets.json
       try { presetCategories = await loadPresetsJson(); } catch(e) { presetCategories = []; }
+      step('JSON:'+presetCategories.length+'类');
 
       // Render filter cards and category bar
       renderFilterCards();
       renderCategoryBar();
+      step('就绪');
+      setTimeout(function(){ if(diag){diag.classList.add('hidden');} }, 1500);
 
       // Register PWA
       registerPWA();
-
-      // Initial canvas clear — render background color even without source image
       clearCanvas();
-
-      console.log('胶片模拟 Lab 已就绪');
-      console.log('协议:', location.protocol === 'file:' ? 'file://（离线模式）' : location.protocol);
-      console.log('滤镜数:', FILTERS.length + customFilters.length);
-      console.log('WebGL:', gl ? 'OK' : 'FAIL');
-      console.log('IndexedDB:', (await dbPromise) ? 'OK' : 'Fallback');
-      console.log('代理:', useProxy ? '自动（直连+多代理回退）' : '关闭');
-      if (location.protocol === 'file:') {
-        console.log('💡 PWA 安装仅在 http:// 下可用，其他功能无影响');
-      }
     }
 
-    init().catch(console.error);
-
+    init().catch(function(e){ console.error('Init crash:',e); });
   })();
   </script>
 </body>
