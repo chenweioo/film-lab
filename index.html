@@ -1026,7 +1026,24 @@
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
       { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
-      { id: 'n5207-test', name: '🎛 N 5207 (cube)', isCube: true, url: 'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/N%205207.cube' }
+      { id:'n5207',  name:'N 5207', isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/N%205207.cube' },
+      { id:'s15207', name:'S1 5207',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S1%205207.cube' },
+      { id:'s25207', name:'S2 5207',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S2%205207.cube' },
+      { id:'yplus1', name:'原色 +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'yplus2', name:'原色 +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'yminus1',name:'原色 -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'yminus2',name:'原色 -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'ysS',    name:'原色 -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
+      { id:'bplus1', name:'标准 +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'bplus2', name:'标准 +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'bminus1',name:'标准 -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'bminus2',name:'标准 -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'bsS',    name:'标准 -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
+      { id:'b2plus1',name:'标II +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'b2plus2',name:'标II +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'b2minus1',name:'标II -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'b2minus2',name:'标II -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'b2S',    name:'标II -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' }
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -2115,31 +2132,19 @@
     function capturePreviewThumbnail(filterId) {
       if (!gl || !glSourceTex) return;
       try {
-        // Read back at reduced resolution for speed
-        const srcW = els.glCanvas.width;
-        const srcH = els.glCanvas.height;
-        if (srcW < 10 || srcH < 10) return;
-
-        // Use a 2D canvas to downscale the WebGL output
-        const thumbCanvas = document.createElement('canvas');
-        const tw = 160, th = 120;
-        thumbCanvas.width = tw;
-        thumbCanvas.height = th;
-        const ctx = thumbCanvas.getContext('2d');
-
-        // Draw the WebGL canvas scaled down
-        ctx.drawImage(els.glCanvas, 0, 0, tw, th);
-
-        const dataUrl = thumbCanvas.toDataURL('image/jpeg', 0.65);
-
-        // Store and update UI
-        const state = filterStates[filterId];
-        if (state) {
+        // Read from WebGL canvas
+        var tw = 160, th = 120;
+        var thumbCtx = els.thumbCanvas.getContext('2d');
+        var glCanvasWithPreserve = els.glCanvas;
+        thumbCtx.drawImage(glCanvasWithPreserve, 0, 0, tw, th);
+        var dataUrl = els.thumbCanvas.toDataURL('image/jpeg', 0.65);
+        var state = filterStates[filterId];
+        if (state && dataUrl && dataUrl.length > 100) {
           state.thumbDataUrl = dataUrl;
           updateFilterCardUI(filterId);
         }
       } catch (e) {
-        // Thumbnail capture is non-critical
+        // non-critical; presets keep placeholder
       }
     }
 
