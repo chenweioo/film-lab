@@ -2132,20 +2132,17 @@
     function capturePreviewThumbnail(filterId) {
       if (!gl || !glSourceTex) return;
       try {
-        // Read from WebGL canvas
-        var tw = 160, th = 120;
-        var thumbCtx = els.thumbCanvas.getContext('2d');
-        var glCanvasWithPreserve = els.glCanvas;
-        thumbCtx.drawImage(glCanvasWithPreserve, 0, 0, tw, th);
-        var dataUrl = els.thumbCanvas.toDataURL('image/jpeg', 0.65);
+        var c = document.createElement('canvas');
+        c.width = 160; c.height = 120;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(els.glCanvas, 0, 0, 160, 120);
+        var dataUrl = c.toDataURL('image/jpeg', 0.65);
         var state = filterStates[filterId];
         if (state && dataUrl && dataUrl.length > 100) {
           state.thumbDataUrl = dataUrl;
           updateFilterCardUI(filterId);
         }
-      } catch (e) {
-        // non-critical; presets keep placeholder
-      }
+      } catch (e) {}
     }
 
     function selectFilter(filter) {
