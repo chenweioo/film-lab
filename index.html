@@ -1041,11 +1041,6 @@
   </div>
 
   <script>
-  (function() {
-    'use strict';
-
-    // ===================== POLYFILLS =====================
-    // canvas.toBlob (Safari < 14)
     if (!HTMLCanvasElement.prototype.toBlob) {
       HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
         const dataUrl = this.toDataURL(type, quality);
@@ -2680,61 +2675,27 @@
     }
 
     // ===================== INIT =====================
-    async function init() {
-      // Initialize IndexedDB
-      try {
-        dbPromise = openDB();
-        await dbPromise;
-      } catch (e) {
-        console.warn('IndexedDB not available, using in-memory cache');
-        dbPromise = null;
-      }
-
-      // Load custom filters from IndexedDB
-      const savedCustom = await dbGetCustomFilters();
-      customFilters = savedCustom.map(cf => ({
-        id: cf.id,
-        name: cf.name,
-        url: cf.url,
-        isCustom: true
-      }));
-      customFilters.forEach(cf => {
-        filterStates[cf.id] = { loaded: false, error: false, thumbDataUrl: null };
-      });
-
-      // Init WebGL
-      resizeCanvas();
-      if (!initWebGL()) {
-        showToast('WebGL 初始化失败');
-        return;
-      }
-
-      // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
-      try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
-
-      // Render filter cards
-      renderFilterCards();
-
-      // Register PWA
-      registerPWA();
-
-      // Initial canvas clear — render background color even without source image
+    // ===================== DIRECT BOOT =====================
+    // Synchronous start — like safari-test.html which works on all devices
+    resizeCanvas();
+    if (initWebGL()) {
+      try { initThumbGL(); } catch(e) {}
       clearCanvas();
-
-      console.log('胶片模拟 Lab 已就绪');
-      console.log('协议:', location.protocol === 'file:' ? 'file://（离线模式）' : location.protocol);
-      console.log('滤镜数:', FILTERS.length + customFilters.length);
-      console.log('WebGL:', gl ? 'OK' : 'FAIL');
-      console.log('IndexedDB:', (await dbPromise) ? 'OK' : 'Fallback');
-      console.log('代理:', useProxy ? '自动（直连+多代理回退）' : '关闭');
-      if (location.protocol === 'file:') {
-        console.log('💡 PWA 安装仅在 http:// 下可用，其他功能无影响');
-      }
+      renderFilterCards();
     }
 
-    init().catch(console.error);
+    // PWA manifest only — no Service Worker
+    try { registerPWA(); } catch(e) {}
 
-  })();
+    // Async: DB + custom filters (non-blocking)
+    setTimeout(function() {
+      try {
+        openDB().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
+          customFilters = (sc||[]).map(function(cf) { return {id:cf.id,name:cf.name,url:cf.url,isCustom:true}; });
+          customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:false,error:false,thumbDataUrl:null}; });
+        }).catch(function(){});
+      } catch(e) {}
+    }, 500);
   </script>
 </body>
 </html>
