@@ -2923,11 +2923,24 @@
 
     // ===================== PWA REGISTRATION =====================
     // ===================== INIT// ===================== INIT =====================
-    // init removed — direct boot
-
-    // Direct boot
-renderFilterCards();
-renderCategoryBar();
-clearCanvas();</script>
+    // Direct boot — synchronous init
+    resizeCanvas();
+    if (!initWebGL()) { console.warn('WebGL failed'); } else {
+      try { initThumbGL(); } catch(e) {}
+      clearCanvas();
+    }
+    renderFilterCards();
+    renderCategoryBar();
+    // Async background: load DB + presets.json
+    setTimeout(function() {
+      openDB().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
+        customFilters = (sc||[]).map(function(cf) { return {id:cf.id,name:cf.name,url:cf.url,isCustom:true,isCube:cf.url&&cf.url.startsWith('cube://')}; });
+        customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:true,error:false,thumbDataUrl:null}; });
+      }).catch(function(){}).then(function() {
+        return loadPresetsJson();
+      }).then(function(pc) {
+        if (pc && pc.length) { presetCategories = pc; renderFilterCards(); renderCategoryBar(); }
+      }).catch(function(){});
+    }, 500);</script>
 </body>
 </html>
