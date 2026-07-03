@@ -2164,11 +2164,15 @@
         showPreviewLoading();
         loadCubeFromServer(filter.url).then(function(cubeD) {
           if (!cubeD || cubeD.size < 2) throw new Error('bad');
+          // DaVinci .cube files store BGR — swap to RGB for GPU
+          for (var si = 0; si < cubeD.data.length; si += 3) {
+            var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
+          }
           var tex = create3DLUTTexture(cubeD);
           set3DLUTTexture(tex.tex, tex.size);
           currentMode = 8; render(8);
           hidePreviewLoading();
-          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
+          setTimeout(function() { capturePreviewThumbnail(filter.id); updateFilterCardUI(filter.id); }, 100);
           track('apply', filter.name);
         }).catch(function(e) {
           hidePreviewLoading();
