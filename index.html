@@ -2922,25 +2922,57 @@
     }, { passive: false });
 
     // ===================== PWA REGISTRATION =====================
-    // ===================== INIT// ===================== INIT =====================
-    // Direct boot — synchronous init
-    resizeCanvas();
-    if (!initWebGL()) { console.warn('WebGL failed'); } else {
-      try { initThumbGL(); } catch(e) {}
-      clearCanvas();
+
+    // Quick fallback for boot errors
+    var categoryBar = document.getElementById('category-bar');
+    function bootMsg(msg, err) {
+      try {
+        if (categoryBar) {
+          categoryBar.classList.remove('hidden');
+          var isErr = err ? true : false;
+          categoryBar.innerHTML = '<span style=\"color:' + (isErr ? '#c05555' : '#c4956a') + '\">' + msg + '</span>';
+        }
+      } catch (_) {}
     }
-    renderFilterCards();
-    renderCategoryBar();
-    // Async background: load DB + presets.json
-    setTimeout(function() {
-      openDB().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
-        customFilters = (sc||[]).map(function(cf) { return {id:cf.id,name:cf.name,url:cf.url,isCustom:true,isCube:cf.url&&cf.url.startsWith('cube://')}; });
-        customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:true,error:false,thumbDataUrl:null}; });
-      }).catch(function(){}).then(function() {
-        return loadPresetsJson();
-      }).then(function(pc) {
-        if (pc && pc.length) { presetCategories = pc; renderFilterCards(); renderCategoryBar(); }
-      }).catch(function(){});
-    }, 500);</script>
+
+    // ===================== INIT =====================
+    try {
+      bootMsg('resize...');
+      resizeCanvas();
+
+      bootMsg('WebGL...');
+      var ok = initWebGL();
+      if (!ok) { bootMsg('WebGL FAIL', true); } else {
+        try { initThumbGL(); } catch(e) {}
+        clearCanvas();
+        bootMsg('WebGL OK');
+
+        bootMsg('cards...');
+        try { renderFilterCards(); } catch(e2) { bootMsg('cards FAIL: ' + (e2.message||'').slice(0,60), true); }
+
+        bootMsg('tabs...');
+        try { renderCategoryBar(); } catch(e3) { bootMsg('tabs FAIL: ' + (e3.message||'').slice(0,60), true); }
+      }
+
+      // Async: DB + presets.json
+      setTimeout(function() {
+        (function() {
+          return openDB();
+        })().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
+          customFilters = (sc||[]).map(function(cf) {
+            return {id:cf.id,name:cf.name,url:cf.url,isCustom:true,isCube:cf.url&&cf.url.startsWith('cube://')};
+          });
+          customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:true,error:false,thumbDataUrl:null}; });
+        }).catch(function(){}).then(function() {
+          return loadPresetsJson();
+        }).then(function(pc) {
+          if (pc && pc.length) { presetCategories = pc; try { renderFilterCards(); renderCategoryBar(); } catch(e4) {} }
+        }).catch(function(){});
+      }, 500);
+
+    } catch (bootErr) {
+      bootMsg('CRASH: ' + (bootErr.message||'').slice(0,80), true);
+      console.error('Boot crash:', bootErr);
+    }</script>
 </body>
 </html>
