@@ -1025,7 +1025,8 @@
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
+      { id: 'n5207-test', name: '🎛 N 5207 (cube)', isCube: true, url: 'presets/N%205207.cube' }
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -1219,7 +1220,8 @@
       uniform sampler2D u_source;
       uniform sampler2D u_clut;
       uniform float u_clutSize;
-      uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=external CLUT, 7+=param presets
+      uniform sampler2D u_lut3d; uniform float u_lut3dSize;
+      uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=CLUT, 7+=param, 8=3D LUT
       // Parameterized preset uniforms (mode >= 7)
       uniform vec3 u_fslope, u_foffset, u_fpower;
       uniform float u_fsat, u_fcont, u_fgrain, u_ftintR, u_ftintB;
@@ -1322,6 +1324,19 @@
         return clamp(c, 0.0, 1.0);
       }
 
+      // Trilinear 3D LUT from 2D texture (mode 8)
+      vec3 sample3DLUT(vec3 rgb) {
+        float N = u_lut3dSize;
+        float rI = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float gI = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
+        float bI = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
+        float r0 = floor(rI), fracR = rI - r0;
+        float x = (bI + 0.5) / N;
+        float y0 = (r0 * N + gI + 0.5) / (N * N);
+        float y1 = ((r0 + 1.0) * N + gI + 0.5) / (N * N);
+        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
+      }
+
       void main() {
         vec4 color = texture2D(u_source, v_texCoord);
         int mode = int(u_mode + 0.5);
@@ -1330,6 +1345,9 @@
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode == 6) {
           vec3 filtered = sampleClut(color.rgb);
+          gl_FragColor = vec4(filtered, color.a);
+        } else if (mode == 8) {
+          vec3 filtered = sample3DLUT(color.rgb);
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode >= 7) {
           vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
@@ -1343,7 +1361,7 @@
     let gl = null;
     let glProgram = null;
     let glSourceTex = null;
-    let glClutTex = null;
+    let glClutTex = null; let gl3DLutTex = null; let gl3DLutSize = 33;
     let glPositionBuffer = null;
     let glTexCoordBuffer = null;
     let glQuadVerts = null; // computed for aspect ratio
@@ -1520,6 +1538,8 @@
       const uSourceLoc = gl.getUniformLocation(glProgram, 'u_source');
       const uClutLoc = gl.getUniformLocation(glProgram, 'u_clut');
       const uClutSizeLoc = gl.getUniformLocation(glProgram, 'u_clutSize');
+      const uLut3dLoc = gl.getUniformLocation(glProgram, 'u_lut3d');
+      const uLut3dSizeLoc = gl.getUniformLocation(glProgram, 'u_lut3dSize');
 
       // Texture unit 0: source image (always used)
       gl.activeTexture(gl.TEXTURE0);
@@ -1537,7 +1557,16 @@
       }
       gl.uniform1i(uClutLoc, 1);
 
-      // Set mode — MUST use uniform1f (shader uniform is float, not int)
+      // Texture unit 2: 3D LUT (mode 8)
+      gl.activeTexture(gl.TEXTURE2);
+      if (mode === 8 && gl3DLutTex) {
+        gl.bindTexture(gl.TEXTURE_2D, gl3DLutTex); gl.uniform1f(uLut3dSizeLoc, gl3DLutSize);
+      } else {
+        gl.bindTexture(gl.TEXTURE_2D, glDummyTex); gl.uniform1f(uLut3dSizeLoc, 33.0);
+      }
+      gl.uniform1i(uLut3dLoc, 2);
+
+      // Set mode — MUST use uniform1f
       gl.uniform1f(uModeLoc, mode);
 
       // Set param preset uniforms (mode >= 7)
@@ -1592,6 +1621,32 @@
       deleteTexture(glSourceTex);
       glSourceTex = createTexture(img);
       updateQuadVerts(img.naturalWidth, img.naturalHeight);
+    }
+
+    function create3DLUTTexture(cubeD) {
+      var N = cubeD.size, src = cubeD.data;
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      var tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      var px = new Uint8Array(N * N * N * 4);
+      for (var ii = 0; ii < N * N * N; ii++) {
+        var r = Math.floor(ii / (N * N)), rem = ii - r * N * N;
+        var g = Math.floor(rem / N), b = rem - g * N;
+        var si = ii * 3, di = ((r * N + g) * N + b) * 4;
+        px[di] = Math.round(Math.max(0, Math.min(1, src[si])) * 255);
+        px[di + 1] = Math.round(Math.max(0, Math.min(1, src[si + 1])) * 255);
+        px[di + 2] = Math.round(Math.max(0, Math.min(1, src[si + 2])) * 255);
+        px[di + 3] = 255;
+      }
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return { tex: tex, size: N };
+    }
+
+    function set3DLUTTexture(tex, sz) {
+      deleteTexture(gl3DLutTex); gl3DLutTex = tex; gl3DLutSize = sz;
     }
 
     // ===================== THUMBNAIL RENDERER =====================
@@ -1705,6 +1760,35 @@
       tg.deleteTexture(clutTex);
 
       return dataUrl;
+    }
+
+    // ===================== .CUBE PARSER =====================
+    function parseCubeFile(text) {
+      var ln = text.replace(/\r/g,'').split('\n').map(function(l){return l.trim();});
+      var filtered = [];
+      for (var i = 0; i < ln.length; i++) {
+        var l = ln[i]; if (!l) continue;
+        if (l.charAt(0) === '#') continue;
+        var u = l.toUpperCase();
+        if (u.startsWith('TITLE') || u.startsWith('DOMAIN') || u.startsWith('LUT_3D_INPUT')) continue;
+        filtered.push(l);
+      }
+      var size = 33;
+      for (var i = 0; i < filtered.length; i++) {
+        if (filtered[i].toUpperCase().startsWith('LUT_3D_SIZE')) {
+          var m = filtered[i].match(/LUT_3D_SIZE\s+(\d+)/i);
+          if (m) size = parseInt(m[1]);
+          filtered.splice(i, 1); break;
+        }
+      }
+      var vals = [];
+      for (var i = 0; i < filtered.length; i++) {
+        var p = filtered[i].split(/\s+/);
+        if (p.length >= 3 && !isNaN(parseFloat(p[0]))) { vals.push(parseFloat(p[0]), parseFloat(p[1]), parseFloat(p[2])); }
+      }
+      var expected = size * size * size * 3;
+      while (vals.length < expected) vals.push(0);
+      return { size: size, data: new Float32Array(vals.slice(0, expected)) };
     }
 
     // ===================== LUT LOADER =====================
@@ -2068,7 +2152,23 @@
 
       renderFilterCards();
 
-      if (!sourceImage) {
+      if (!sourceImage) { return; }
+
+      // .cube 3D LUT
+      if (filter.isCube) {
+        showPreviewLoading();
+        loadCubeFromServer(filter.url).then(function(cubeD) {
+          if (!cubeD || cubeD.size < 2) throw new Error('bad');
+          var tex = create3DLUTTexture(cubeD);
+          set3DLUTTexture(tex.tex, tex.size);
+          currentMode = 8; render(8);
+          hidePreviewLoading();
+          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
+          track('apply', filter.name);
+        }).catch(function(e) {
+          hidePreviewLoading();
+          showToast('Cube失败: ' + (e.message || '').slice(0, 40));
+        });
         return;
       }
 
@@ -2202,7 +2302,18 @@
       renderFilterCards();
     }
 
-    let savedBlob = null;  // kept for share button
+    let savedBlob = null;
+
+    function loadCubeFromServer(url) {
+      return fetch(url + '?v=1', { cache: 'no-store' }).then(function(resp) {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.text();
+      }).then(function(text) {
+        var cube = parseCubeFile(text);
+        if (!cube || cube.size < 2) throw new Error('Parse failed');
+        return cube;
+      });
+    }
 
     async function saveImage() {
       if (!glSourceTex) {
