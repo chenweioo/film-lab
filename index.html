@@ -1,4 +1,4 @@
-<!-- v2026.07.03-final
+<!--
   胶片模拟 Lab — Film Simulation Filter Camera
   ==============================================
 
@@ -280,18 +280,6 @@
       padding: 4px 4px 0;
     }
 
-    /* Category Tab Bar */
-    #category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 2px 4px 6px; flex-shrink: 0; scrollbar-width: none; }
-    #category-bar::-webkit-scrollbar { display: none; }
-    #category-bar.hidden { display: none; }
-    .cat-tab {
-      flex: 0 0 auto; padding: 6px 15px; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 18px; color: var(--text-muted); font-size: 0.7rem; white-space: nowrap;
-      cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s;
-    }
-    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
-    .cat-tab:active { transform: scale(0.95); }
-
     #filter-strip {
       display: flex;
       gap: 10px;
@@ -462,16 +450,39 @@
     }
 
     /* ========== About Page ========== */
-    #page-about { padding: 48px 32px; gap: 24px; align-items: center; justify-content: center; }
-    #page-about .about-logo { font-size: 2.6rem; opacity: 0.35; align-self: center; }
-    #page-about .about-tagline { font-size: 2rem; line-height: 1.6; color: var(--text); text-align: center; max-width: 300px; align-self: center; }
-    #page-about .about-tagline strong.about-highlight { color: var(--accent); font-weight: 700; font-style: italic; letter-spacing: 0.08em; font-family: Georgia, 'Noto Serif SC', 'SimSun', serif; }
-    .about-divider { width: 36px; height: 2px; background: var(--accent); opacity: 0.3; border-radius: 1px; align-self: center; }
-    .about-creator { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; width: 100%; max-width: 260px; align-self: center; }
-    .about-creator-name { font-size: 1rem; color: var(--accent); font-weight: 700; letter-spacing: 0.06em; text-align: left; width: 100%; }
-    .about-creator-bio { font-size: 0.82rem; color: var(--text-muted); line-height: 1.9; letter-spacing: 0.04em; text-align: left; width: 100%; }
-    .about-creator-contact { font-size: 0.78rem; color: var(--accent-dim); letter-spacing: 0.04em; line-height: 1.8; text-align: left; width: 100%; }
-    #page-about .about-credits { text-align: center; font-size: 0.6rem; color: var(--text-muted); opacity: 0.4; line-height: 1.8; letter-spacing: 0.03em; margin-top: 12px; padding-bottom: 20px; }
+    #page-about {
+      padding: 32px 24px;
+      gap: 24px;
+      align-items: center;
+    }
+    #page-about .about-logo {
+      font-size: 3rem;
+      opacity: 0.6;
+    }
+    #page-about .about-text {
+      text-align: center;
+      line-height: 1.8;
+      max-width: 320px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+    }
+    #page-about .about-text strong {
+      color: var(--accent);
+      font-weight: 400;
+    }
+    #page-about .about-credits {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+      line-height: 1.8;
+      letter-spacing: 0.03em;
+    }
+    #page-about .about-credits a {
+      color: var(--accent-dim);
+      text-decoration: none;
+    }
 
     /* ========== Bottom Nav ========== */
     #bottom-nav {
@@ -619,21 +630,41 @@
       color: var(--accent);
     }
 
-    .film-lib-label { color: var(--accent-dim); font-size: 0.7rem; text-align: center; letter-spacing: 0.05em; margin-bottom: 6px; }
-    .film-lib-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
-      max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2px 2px 4px;
+    .modal-manual-dl {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      max-height: 180px;
+      overflow-y: auto;
     }
-    .film-lib-card {
-      background: var(--bg-card); border: 2px solid transparent; border-radius: var(--radius-sm);
-      padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.15s;
-      font-size: 0.66rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.3;
+    .manual-dl-title {
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
     }
-    .film-lib-card:active { transform: scale(0.96); }
-    .film-lib-card.selected { border-color: var(--accent); background: #3a2818; }
-    .film-lib-card.added { border-color: var(--accent-dim); background: #2a2218; opacity: 0.7; cursor: default; pointer-events: none; }
-    .film-lib-card.added::after { content: ' ✓'; color: var(--accent); font-size: 0.6rem; }
-    #btn-confirm-add:disabled { opacity: 0.4; cursor: not-allowed; }
+    .manual-dl-desc {
+      font-size: 0.65rem;
+      opacity: 0.7;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .manual-dl-link {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 5px 0;
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom: 1px solid var(--border);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .manual-dl-link:last-child { border-bottom: none; }
+    .manual-dl-link:active { color: var(--accent); }
 
     .modal-actions {
       display: flex;
@@ -901,9 +932,6 @@
         </button>
       </div>
 
-      <!-- Category Tab Bar (auto-hidden if only 1 category) -->
-      <div id="category-bar" class="hidden"></div>
-
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
       <div id="filter-strip">
@@ -915,18 +943,20 @@
     <!-- ====== About Page ====== -->
     <div id="page-about" class="page">
       <div class="about-logo serif">📷</div>
-      <h1 class="serif about-tagline">
-        用数字的方式，<br>感受<strong class="about-highlight">银盐的温度</strong>。
-      </h1>
-      <div class="about-divider"></div>
-      <div class="about-creator">
-        <p class="about-creator-name">创作者：阿伟</p>
-        <p class="about-creator-bio">一名摄影爱好者，<br>也是一位数字胶片探索者，<br>尝试用最简单的方式和最低的成本<br>实现胶片模拟。</p>
-        <p class="about-creator-contact">联系与合作：15832241535</p>
-        <p class="about-creator-contact">建议与反馈（微信）：aweihuilaile</p>
-      </div>
+      <h1 class="serif" style="font-size:1.5rem;">胶片模拟 Lab</h1>
+      <p class="about-text serif">
+        用数字的方式，感受<strong>银盐的温度</strong>。<br><br>
+        LUT 资源来自 <strong>RawPedia</strong>，<br>
+        灵感源自 <strong>sunnyspeedstudio</strong> 的<br>
+        batch-film-simulation。
+      </p>
       <div class="about-credits">
-        胶片 LUT 资源来自 RawPedia，<br>灵感源自 sunnyspeedstudio 的 batch-film-simulation。
+        技术实现：WebGL HaldCLUT<br>
+        缓存：IndexedDB<br>
+        <br>
+        <a href="https://rawpedia.rawtherapee.com/" target="_blank" rel="noopener">
+          RawPedia 资源 →
+        </a>
       </div>
     </div>
 
@@ -949,17 +979,10 @@
       </button>
     </nav>
 
-    <!-- ====== More Filters Modal ====== -->
+    <!-- ====== Custom LUT Modal ====== -->
     <div id="lut-modal" class="modal-overlay">
-      <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
-        <h3 class="serif">选择更多滤镜</h3>
-
-        <!-- Film library grid -->
-        <p class="film-lib-label">🎞 胶片库（点击选择，可多选）</p>
-        <div class="film-lib-grid" id="film-library-grid"></div>
-        <div class="modal-actions"><button class="btn-primary" id="btn-confirm-add" disabled>确定添加（已选 0 个）</button></div>
-
-        <div class="modal-divider">或手动添加</div>
+      <div class="modal-sheet">
+        <h3 class="serif">添加自定义滤镜</h3>
 
         <div class="modal-input-group">
           <label>粘贴 HaldCLUT 图片 URL</label>
@@ -976,10 +999,15 @@
         </label>
         <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
 
-        <label class="modal-file-btn" for="cube-file-input" style="margin-top:8px;">
-          🎛 从本地文件选取 .cube 3D LUT
-        </label>
-        <input type="file" id="cube-file-input" accept=".cube" style="display:none">
+        <div class="modal-divider">备用方案（100% 可靠）</div>
+
+        <div class="modal-manual-dl">
+          <p class="manual-dl-title">📥 手动下载 LUT 后导入</p>
+          <p class="manual-dl-desc">长按下方链接下载图片 → 再用上方「📁 从本地文件选取」导入。第一次下载后自动缓存。</p>
+          <div class="manual-dl-links" id="manual-dl-links">
+            <!-- Populated by JS -->
+          </div>
+        </div>
 
         <div class="modal-actions">
           <button class="btn-secondary" id="lut-modal-close">取消</button>
@@ -1010,7 +1038,13 @@
         </div>
       </div>
     </div>
-  </div><script>// ===================== POLYFILLS =====================
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ===================== POLYFILLS =====================
     // canvas.toBlob (Safari < 14)
     if (!HTMLCanvasElement.prototype.toBlob) {
       HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
@@ -1026,69 +1060,19 @@
     // ===================== CONSTANTS =====================
     // Built-in film presets: pure GLSL, no download needed, instant.
     // url is kept for optional manual download (available via "+" modal).
-    var FILTERS = [
-      { id: 'idtest', name: '🔬 身份验证', preset: 99 },
-      { id: 'bluetest', name: '🔵 纯蓝测试', preset: 98 },
+    const FILTERS = [
       { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
       { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
       { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
       { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
     ];
 
-    // Film Library — all GPU shader presets, zero download, instant
-    var FILM_LIBRARY = [
-      { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
-      { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
-      { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
-      { name:'富士 Pro Neg Hi',   params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
-      { name:'富士 Pro Neg Std',  params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
-      { name:'富士 Pro 400H',     params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
-      { name:'富士 Superia 100',  params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
-      { name:'富士 Superia 400',  params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
-      { name:'富士 Superia 800',  params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
-      { name:'富士 Superia 1600', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
-      { name:'柯达 Portra 160 VC',params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
-      { name:'柯达 Portra 400 NC',params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
-      { name:'柯达 Portra 400 UC',params:[0.95,0.93,0.92, 0.02,0.02,0.04, 0.95,0.94,0.95, 1.25,0.92, 0, 0.02,0] },
-      { name:'柯达 Portra 400 VC',params:[0.94,0.93,0.91, 0.02,0.01,0.03, 0.95,0.94,0.95, 1.15,0.90, 0, 0.02,0] },
-      { name:'柯达 Portra 800',   params:[1.02,1.0,1.0, 0.01,0.01,0.01, 1.0,0.99,0.99, 0.95,0.95, 0, 0.01,0] },
-      { name:'柯达 Ektachrome 64',params:[1.15,1.13,1.17, -0.03,-0.02,-0.04, 1.01,1.01,1.01, 1.15,1.12, 0, 0,-0.03] },
-      { name:'柯达 Ektachrome 100',params:[1.20,1.16,1.20, -0.04,-0.03,-0.04, 1.02,1.01,1.01, 1.25,1.15, 0, 0,0] },
-      { name:'柯达 Ektachrome 100 VS',params:[1.24,1.18,1.24, -0.05,-0.03,-0.05, 1.03,1.02,1.02, 1.45,1.18, 0, 0,-0.01] },
-      { name:'柯达 Gold 100',     params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
-      { name:'柯达 Gold 200',     params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
-      { name:'柯达 Max 400',      params:[1.12,1.10,1.08, -0.03,-0.02,-0.02, 1.01,1.0,1.0, 1.08,1.12, 0, 0.02,0] },
-      { name:'柯达 T-Max 100',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
-      { name:'柯达 T-Max 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
-      { name:'柯达 Tri-X 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
-      { name:'伊尔福 Delta 100',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
-      { name:'伊尔福 Delta 400',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
-      { name:'伊尔福 Delta 3200',  params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
-      { name:'伊尔福 FP4 Plus 125',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
-      { name:'伊尔福 Pan F Plus 50',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
-      { name:'爱克发 Optima 100',  params:[1.02,1.02,1.0, 0.01,0.01,0.01, 0.98,0.98,0.99, 1.05,0.95, 0, 0.02,0] },
-      { name:'爱克发 Optima 400',  params:[1.05,1.04,1.02, 0.0,0.0,0.0, 0.99,0.99,0.99, 1.08,1.0, 0, 0.02,0] },
-      { name:'爱克发 Ultra Color', params:[1.18,1.14,1.16, -0.04,-0.03,-0.04, 1.02,1.02,1.02, 1.55,1.18, 0, 0,0] },
-      { name:'爱克发 Vista 100',   params:[1.03,1.03,1.01, 0.0,0.0,0.0, 1.0,1.0,1.0, 1.15,1.0, 0, 0,0] },
-      { name:'爱克发 Vista 200',   params:[1.05,1.04,1.02, -0.01,-0.01,0.0, 1.0,1.0,1.0, 1.20,1.03, 0, 0,0] },
-      { name:'爱克发 Vista 400',   params:[1.08,1.06,1.04, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 1.22,1.08, 0, 0,0] },
-      { name:'爱克发 Vista 800',   params:[1.14,1.10,1.08, -0.04,-0.03,-0.03, 1.02,1.01,1.01, 1.08,1.14, 0, 0.01,0] },
-      { name:'宝丽来 Polachrome',  params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
-      { name:'富士 FP-100C',       params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
-      { name:'富士 FP-3000B',      params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
-      { name:'拍立得 600',         params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
-      { name:'拍立得 669',         params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
-      { name:'拍立得 690',         params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
-      { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] },
-    ];
-
-    const MAX_IMAGE_DIM = 4096; // preserve detail for high-res export
+    const MAX_IMAGE_DIM = 2048;
     const DB_NAME = 'FilmLabDB';
-    const DB_VERSION = 5; // forced rebuild: v4 cube cache was tainted by parse bug
+    const DB_VERSION = 2;
     const STORE_LUTS = 'luts';
     const STORE_CUSTOM = 'custom_filters';
-    const STORE_CUBE = 'cube_cache';
     const THUMB_W = 160;
     const THUMB_H = 120;
 
@@ -1116,9 +1100,7 @@
       lutUrlInput: $('#lut-url-input'),
       lutUrlLoad: $('#lut-url-load'),
       lutFileInput: $('#lut-file-input'),
-      cubeFileInput: $('#cube-file-input'),
       lutModalClose: $('#lut-modal-close'),
-      btnConfirmAdd: $('#btn-confirm-add'),
       toast: $('#toast'),
       proxyBadge: $('#proxy-badge'),
       saveOverlay: $('#save-overlay'),
@@ -1131,15 +1113,12 @@
     let sourceImage = null;        // HTMLImageElement (resized)
     let currentFilterId = null;
     let currentClutTexture = null;
-    let currentFilter = null;
-    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=CLUT, 7+=param presets
+    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=external CLUT
     let useProxy = true;           // try CORS proxies when direct fetch fails
     let customFilters = [];
     let lutCache = {};            // in-memory fallback: url -> blob
     let filterStates = {};        // id -> { loaded: bool, error: bool, thumbDataUrl: string|null }
     let toastTimer = null;
-    let presetCategories = [];    // loaded from presets.json
-    let currentCategoryIdx = 0;
 
     // Initialize filter states
     // Built-in presets (with preset field) are always "loaded" — instant GPU render
@@ -1156,14 +1135,12 @@
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          // Purge all old data on version bump to clear parse-bug corrupted caches
-          var names = Array.from(db.objectStoreNames);
-          for (var n = 0; n < names.length; n++) {
-            try { db.deleteObjectStore(names[n]); } catch(ignore) {}
+          if (!db.objectStoreNames.contains(STORE_LUTS)) {
+            db.createObjectStore(STORE_LUTS, { keyPath: 'url' });
           }
-          db.createObjectStore(STORE_LUTS, { keyPath: 'url' });
-          db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
-          db.createObjectStore(STORE_CUBE, { keyPath: 'url' });
+          if (!db.objectStoreNames.contains(STORE_CUSTOM)) {
+            db.createObjectStore(STORE_CUSTOM, { keyPath: 'id' });
+          }
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -1193,25 +1170,6 @@
         store.put({ url, blob, timestamp: Date.now() });
         tx.oncomplete = () => resolve();
         tx.onerror = () => resolve();
-      });
-    }
-
-    async function dbGet(key, storeName) {
-      const db = await dbPromise; if (!db) return null;
-      return new Promise((resolve) => {
-        const tx = db.transaction(storeName, 'readonly');
-        const req = tx.objectStore(storeName).get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(null);
-      });
-    }
-
-    async function dbSet(storeName, key, data) {
-      const db = await dbPromise; if (!db) return;
-      return new Promise((resolve) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        tx.objectStore(storeName).put({ ...data, url: key, _ts: Date.now() });
-        tx.oncomplete = () => resolve(); tx.onerror = () => resolve();
       });
     }
 
@@ -1266,11 +1224,7 @@
       uniform sampler2D u_source;
       uniform sampler2D u_clut;
       uniform float u_clutSize;
-      uniform sampler2D u_lut3d; uniform float u_lut3dSize;
-      uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=external CLUT, 7+=param presets
-      // Parameterized preset uniforms (used when u_mode >= 7)
-      uniform vec3 u_fslope, u_foffset, u_fpower;
-      uniform float u_fsat, u_fcont, u_fgrain, u_ftintR, u_ftintB;
+      uniform float u_mode; // 0=passthrough, 1-5=builtin presets, 6=external CLUT
 
       // ---- HaldCLUT lookup (mode 6) ----
       vec3 sampleClut(vec3 rgb) {
@@ -1359,32 +1313,6 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // Trilinear 3D LUT lookup (mode 8)
-      // 2D texture layout: row=r*N+g, col=b. LINEAR filter gives b+g bilinear.
-      // Mix two r-slices for full 8-point trilinear interpolation.
-      vec3 sample3DLUT(vec3 rgb) {
-        float N = u_lut3dSize;
-        float rIdx = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
-        float gIdx = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
-        float bIdx = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
-        float r0 = floor(rIdx), fracR = rIdx - r0;
-        float x = (bIdx + 0.5) / N;
-        float y0 = (r0 * N + gIdx + 0.5) / (N * N);
-        float y1 = ((r0 + 1.0) * N + gIdx + 0.5) / (N * N);
-        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
-      }
-
-      // Parameterized preset from uniforms (mode >= 7)
-      vec3 applyParamPreset(vec3 c, vec2 uv) {
-        if (u_fgrain > 0.01) {
-          float lum = dot(c, vec3(0.30, 0.59, 0.11)); lum = (lum - 0.5) * u_fcont + 0.5;
-          float n = hash(uv * 1024.0 + fract(uv*137.0)) + hash(uv * 2048.0 - fract(uv*79.0)*0.5);
-          n = (n - 0.5) * u_fgrain * 0.07; n *= 1.0 - abs(lum - 0.5) * 1.2;
-          lum = clamp(lum + n, 0.0, 1.0); c = vec3(lum);
-        } else { c = ascCDL(c, u_fslope, u_foffset, u_fpower); c = saturate(c, u_fsat); c = contrast(c, u_fcont); }
-        return clamp(c, 0.0, 1.0);
-      }
-
       void main() {
         vec4 color = texture2D(u_source, v_texCoord);
         int mode = int(u_mode + 0.5);
@@ -1393,11 +1321,6 @@
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode == 6) {
           vec3 filtered = sampleClut(color.rgb);
-          gl_FragColor = vec4(filtered, color.a);
-        } else if (mode == 8) {
-          gl_FragColor = vec4(sample3DLUT(color.rgb), color.a);
-        } else if (mode >= 7) {
-          vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
           gl_FragColor = vec4(filtered, color.a);
         } else {
           gl_FragColor = color;
@@ -1408,7 +1331,7 @@
     let gl = null;
     let glProgram = null;
     let glSourceTex = null;
-    let glClutTex = null; let gl3DLutTex = null; let gl3DLutSize = 33;
+    let glClutTex = null;
     let glPositionBuffer = null;
     let glTexCoordBuffer = null;
     let glQuadVerts = null; // computed for aspect ratio
@@ -1572,24 +1495,30 @@
     let glDummyTex = null;        // 1x1 texture bound to u_clut when not in mode 6
 
     function render(mode) {
-      // mode: 0=passthrough, 1-5=builtin, 6=CLUT, 7+=param, 8=3D LUT
-      if (!gl || !glSourceTex || !glProgram) return;
+      // mode: 0=passthrough, 1-5=builtin presets, 6=external CLUT
+      if (!gl || !glSourceTex) return;
+      if (!glProgram) return;
 
-      gl.clearColor(0.118, 0.094, 0.071, 1.0); gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(glProgram);
+      gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
+      gl.clear(gl.COLOR_BUFFER_BIT);
 
-      const uLut3dLoc = gl.getUniformLocation(glProgram, 'u_lut3d');
-      const uLut3dSizeLoc = gl.getUniformLocation(glProgram, 'u_lut3dSize');
+      gl.useProgram(glProgram);
+
       const uModeLoc = gl.getUniformLocation(glProgram, 'u_mode');
       const uSourceLoc = gl.getUniformLocation(glProgram, 'u_source');
       const uClutLoc = gl.getUniformLocation(glProgram, 'u_clut');
       const uClutSizeLoc = gl.getUniformLocation(glProgram, 'u_clutSize');
 
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, glSourceTex); gl.uniform1i(uSourceLoc, 0);
+      // Texture unit 0: source image (always used)
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, glSourceTex);
+      gl.uniform1i(uSourceLoc, 0);
 
-      // Texture unit 1: CLUT or dummy
+      // Texture unit 1: CLUT or dummy (must always be bound!)
       gl.activeTexture(gl.TEXTURE1);
       if (mode === 6 && glClutTex) {
-        gl.bindTexture(gl.TEXTURE_2D, glClutTex); gl.uniform1f(uClutSizeLoc, currentClutSize || 1728.0);
+        gl.bindTexture(gl.TEXTURE_2D, glClutTex);
+        gl.uniform1f(uClutSizeLoc, currentClutSize || 1728.0);
       } else {
         gl.bindTexture(gl.TEXTURE_2D, glDummyTex);
         gl.uniform1f(uClutSizeLoc, 1728.0);
@@ -1598,26 +1527,6 @@
 
       // Set mode — MUST use uniform1f (shader uniform is float, not int)
       gl.uniform1f(uModeLoc, mode);
-
-      // Texture unit 2: 3D LUT (mode 8)
-      gl.activeTexture(gl.TEXTURE2);
-      if (mode === 8 && gl3DLutTex) {
-        gl.bindTexture(gl.TEXTURE_2D, gl3DLutTex); gl.uniform1f(uLut3dSizeLoc, gl3DLutSize);
-      } else { gl.bindTexture(gl.TEXTURE_2D, glDummyTex); gl.uniform1f(uLut3dSizeLoc, 33.0); }
-      gl.uniform1i(uLut3dLoc, 2);
-
-      // Set parameterized preset uniforms (mode >= 7)
-      if (mode >= 7 && currentFilter && currentFilter.params) {
-        const p = currentFilter.params;
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fslope'), p[0], p[1], p[2]);
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_foffset'), p[3], p[4], p[5]);
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fpower'), p[6], p[7], p[8]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fsat'), p[9]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fcont'), p[10]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fgrain'), p[11]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintR'), p[12]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintB'), p[13]);
-      }
 
       // Vertex positions
       const posLoc = gl.getAttribLocation(glProgram, 'a_position');
@@ -1658,44 +1567,6 @@
       deleteTexture(glSourceTex);
       glSourceTex = createTexture(img);
       updateQuadVerts(img.naturalWidth, img.naturalHeight);
-    }
-
-    function create3DLUTTexture(cubeData) {
-      const N = cubeData.size, src = cubeData.data;
-      // .cube stores data in this exact pixel order:
-      // for r=0..N-1: for g=0..N-1: for b=0..N-1: R G B
-      // Flatten into RGBA texture, width=N (b axis), height=N*N (each row is one (r,g) pair)
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      const total = N * N * N;
-      const pixels = new Uint8Array(total * 4);
-      // .cube data order: R_G_B triplets, iterating B→G→R (B innermost, R outermost)
-      // PERF: reuse same offset arithmetic in a single pass
-      for (let ii = 0; ii < total; ii++) {
-        // ii = r*N² + g*N + b  (R slowest, B fastest)
-        const r = Math.floor(ii / (N*N));
-        const rem = ii - r*N*N;
-        const g = Math.floor(rem / N);
-        const b = rem - g*N;
-        const srcIdx = ii * 3;
-        // Texture layout: row = r*N + g, col = b (R/G bilinear in y, B in x)
-        const dstOff = ((r*N + g) * N + b) * 4;
-        pixels[dstOff]     = Math.round(Math.max(0, Math.min(1, src[srcIdx]))   * 255);
-        pixels[dstOff + 1] = Math.round(Math.max(0, Math.min(1, src[srcIdx+1])) * 255);
-        pixels[dstOff + 2] = Math.round(Math.max(0, Math.min(1, src[srcIdx+2])) * 255);
-        pixels[dstOff + 3] = 255;
-      }
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N * N, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      return { tex, size: N };
-    }
-
-    function set3DLUTTexture(tex, size) {
-      deleteTexture(gl3DLutTex); gl3DLutTex = tex; gl3DLutSize = size;
     }
 
     // ===================== THUMBNAIL RENDERER =====================
@@ -1812,101 +1683,6 @@
     }
 
     // ===================== LUT LOADER =====================
-
-    // ===================== SERVER-SIDE PRESETS =====================
-    async function loadPresetsJson() {
-      try {
-        const resp = await fetch('presets.json?v=2', { cache: 'reload' });
-        if (!resp.ok) { console.log('presets.json not found, using built-in only'); return []; }
-        const data = await resp.json();
-        if (!Array.isArray(data)) { console.warn('presets.json must be an array'); return []; }
-        console.log('Loaded presets.json:', data.length, 'categories');
-        return data;
-      } catch (e) { console.warn('presets.json load error:', e.message); return []; }
-    }
-
-    function getActivePresets() {
-      if (!presetCategories.length) return [];
-      if (currentCategoryIdx < 0 || currentCategoryIdx >= presetCategories.length) return [];
-      return presetCategories[currentCategoryIdx].presets || [];
-    }
-
-    function getActiveCategoryName() {
-      if (!presetCategories.length) return '';
-      if (currentCategoryIdx < 0 || currentCategoryIdx >= presetCategories.length) return '';
-      return presetCategories[currentCategoryIdx].category || '';
-    }
-
-    function renderCategoryBar() {
-      if (presetCategories.length <= 1) {
-        document.getElementById('category-bar').classList.add('hidden');
-        document.getElementById('category-bar').innerHTML = '';
-        return;
-      }
-      const bar = document.getElementById('category-bar');
-      bar.classList.remove('hidden');
-      bar.innerHTML = presetCategories.map((cat, i) =>
-        '<button class="cat-tab' + (i === currentCategoryIdx ? ' active' : '') + '" data-cat="' + i + '">' + cat.category + '</button>'
-      ).join('');
-      bar.querySelectorAll('.cat-tab').forEach(btn => {
-        btn.addEventListener('click', () => {
-          currentCategoryIdx = parseInt(btn.dataset.cat);
-          renderCategoryBar();
-          renderFilterCards();
-          const act = getActivePresets();
-          if (act.length > 0) {
-            const fid = 'preset-cube-' + currentCategoryIdx + '-0';
-            const first = { id: fid, name: act[0].name, url: act[0].url, isCube: true, isServerPreset: true };
-            selectFilter(first);
-          }
-        });
-      });
-      const active = bar.querySelector('.cat-tab.active');
-      if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-
-    async function loadCubeFromServer(url) {
-      // Download from server (DB_VERSION bump purged old cache; v=2 bypass CDN)
-      const resp = await fetch(url + (url.includes('?')?'&':'?') + 'v=4', {cache:'no-store'});
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const text = await resp.text();
-      const cubeData = parseCubeFile(text);
-      // Save to in-memory cache for this session only
-      lutCache[url] = text;
-      return cubeData;
-    }
-
-    // ===================== .CUBE PARSER =====================
-    function parseCubeFile(text) {
-      // Remove all header/meta lines; keep only numeric RGB triplets
-      const lines = text.replace(/\r/g,'').split('\n')
-        .map(function(l){return l.trim();})
-        .filter(function(l){
-          if(!l)return false;
-          if(l.charAt(0)==='#')return false;
-          var u=l.toUpperCase();
-          if(u.startsWith('TITLE')||u.startsWith('DOMAIN')||u.startsWith('LUT_3D_INPUT'))return false;
-          return true;
-        });
-      let size = 33;
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].toUpperCase().startsWith('LUT_3D_SIZE')) {
-          const m = lines[i].match(/LUT_3D_SIZE\s+(\d+)/i) || lines[i].match(/\d+$/);
-          if (m) size = parseInt(m[1] || '33');
-          lines.splice(i, 1); break;
-        }
-      }
-      const vals = [];
-      for (let i = 0; i < lines.length; i++) {
-        const p = lines[i].split(/\s+/);
-        if (p.length >= 3 && !isNaN(parseFloat(p[0]))) {
-          vals.push(parseFloat(p[0]), parseFloat(p[1]), parseFloat(p[2]));
-        }
-      }
-      const expected = size * size * size * 3;
-      while (vals.length < expected) vals.push(0);
-      return { size, data: new Float32Array(vals.slice(0, expected)) };
-    }
 
     // CORS proxies tried in order. RawPedia lacks CORS headers, so a proxy
     // is required for the first download. Once cached in IndexedDB as a blob,
@@ -2178,18 +1954,7 @@
       const strip = els.filterStrip;
       strip.innerHTML = '';
 
-      // Server-preset .cube filters (from presets.json)
-      const serverPresets = [];
-      try {
-        presetCategories.forEach((cat, ci) => {
-          (cat.presets || []).forEach((p, pi) => {
-            const fid = 'preset-cube-' + ci + '-' + pi;
-            serverPresets.push({ id: fid, name: p.name, isCube: true, isServerPreset: true, url: p.url });
-            if (!filterStates[fid]) filterStates[fid] = { loaded: false, error: false, thumbDataUrl: null };
-          });
-        });
-      } catch(e) {}
-      const allFilters = [...FILTERS, ...serverPresets, ...customFilters];
+      const allFilters = [...FILTERS, ...customFilters];
 
       allFilters.forEach((f, i) => {
         const state = filterStates[f.id] || { loaded: false, error: false, thumbDataUrl: null };
@@ -2229,7 +1994,7 @@
       addCard.className = 'filter-card add-card';
       addCard.innerHTML = `
         <span class="add-icon">+</span>
-        <span class="add-label">更多<br>滤镜</span>
+        <span class="add-label">自定义<br>滤镜</span>
       `;
       addCard.addEventListener('click', openLUTModal);
       strip.appendChild(addCard);
@@ -2269,7 +2034,8 @@
       }
     }
 
-    async function selectFilter(filter) {  currentFilterId = filter.id; currentFilter = filter;
+    function selectFilter(filter) {
+      currentFilterId = filter.id;
       const state = filterStates[filter.id] || { loaded: false, error: false };
       filterStates[filter.id] = state;
       state.loaded = true;
@@ -2277,60 +2043,19 @@
 
       renderFilterCards();
 
-      if (!sourceImage) { return; }
-
-      // Server-side .cube 3D LUT preset
-      if (filter.isCube && filter.isServerPreset) {
-        showPreviewLoading();
-        try {
-          var cubeD = await loadCubeFromServer(filter.url);
-          if (!cubeD || cubeD.size<2) throw new Error('fmt');
-          var texInfo = create3DLUTTexture(cubeD);
-          set3DLUTTexture(texInfo.tex, texInfo.size);
-          currentMode = 8; render(8);
-          hidePreviewLoading();
-          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
-          track('apply', filter.name);
-        } catch(e) {
-          hidePreviewLoading();
-          showToast('e:'+(e.message||'').slice(0,40));
-        }
+      if (!sourceImage) {
         return;
       }
 
-      // Built-in / film library / server preset — all GPU shader
+      // Built-in preset: render instantly (GPU shader, no download)
       if (filter.preset) {
-        // preset 99 = identity LUT self-test
-        // preset 98 = pure blue LUT test — every pixel→blue
-        if (filter.preset === 98) {
-          var bs=17, bd=new Float32Array(bs*bs*bs*3);
-          for(var ir=0;ir<bs;ir++)for(var ig=0;ig<bs;ig++)for(var ib=0;ib<bs;ib++){
-            var bi=(ir*bs*bs+ig*bs+ib)*3;
-            bd[bi]=0; bd[bi+1]=0; bd[bi+2]=1; // all input→pure blue (R=0,G=0,B=1)
-          }
-          var bt=create3DLUTTexture({size:bs,data:bd});
-          set3DLUTTexture(bt.tex,bt.size);
-          currentMode=8;render(8);
-          updateFilterCardUI(filter.id);capturePreviewThumbnail(filter.id);
-          track('apply',filter.name);return;
-        }
-        if (filter.preset === 99) {
-          var idSize = 33;
-          var idVals = new Float32Array(idSize*idSize*idSize*3);
-          for(var ir=0;ir<idSize;ir++){for(var ig=0;ig<idSize;ig++){for(var ib=0;ib<idSize;ib++){
-            var ii=(ir*idSize*idSize+ig*idSize+ib)*3;
-            idVals[ii]=ir/(idSize-1); idVals[ii+1]=ig/(idSize-1); idVals[ii+2]=ib/(idSize-1);
-          }}}
-          var idT = create3DLUTTexture({size:idSize,data:idVals});
-          set3DLUTTexture(idT.tex, idT.size);
-          currentMode = 8; render(8);
-          updateFilterCardUI(filter.id); capturePreviewThumbnail(filter.id);
-          track('apply', filter.name); return;
-        }
         currentMode = filter.preset;
         render(currentMode);
         updateFilterCardUI(filter.id);
+
+        // Generate thumbnail preview from rendered canvas
         capturePreviewThumbnail(filter.id);
+
         track('apply', filter.name);
         return;
       }
@@ -2358,7 +2083,8 @@
           console.error('Custom LUT load error:', err);
           showToast('自定义滤镜加载失败，点击重试');
         });
-      }}
+      }
+    }
 
     async function handleFileSelect(file) {
       if (!file || !file.type.match(/image\//)) {
@@ -2453,63 +2179,89 @@
 
     let savedBlob = null;  // kept for share button
 
-    function saveImage() {
-      if (!glSourceTex || !sourceImage) { showToast('请先选择照片'); return; }
-      showToast('正在导出高画质…');
+    async function saveImage() {
+      if (!glSourceTex) {
+        showToast('请先选择照片');
+        return;
+      }
 
-      const srcW = sourceImage.naturalWidth, srcH = sourceImage.naturalHeight;
-      const origW = els.glCanvas.width, origH = els.glCanvas.height;
+      try {
+        // 1. Render current filter to canvas
+        render(currentMode);
+        await new Promise(r => setTimeout(r, 150));
 
-      // Scale canvas to match source resolution (max 4096 on long edge)
-      let outW, outH;
-      const MAX_LONG = 4096;
-      if (srcW >= srcH) { outW = Math.min(srcW, MAX_LONG); outH = Math.round(outW * srcH / srcW); }
-      else { outH = Math.min(srcH, MAX_LONG); outW = Math.round(outH * srcW / srcH); }
+        // 2. Extract from WebGL canvas
+        const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
+        if (!dataUrl || dataUrl === 'data:,') {
+          showToast('导出失败，请重试');
+          return;
+        }
 
-      els.glCanvas.width = outW; els.glCanvas.height = outH;
-      gl.viewport(0, 0, outW, outH);
-      updateQuadVerts(srcW, srcH); // keep aspect ratio on larger canvas
-      render(currentMode);
-
-      // Wait for GPU flush
-      setTimeout(function() {
-        // Extract at high quality
-        var dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.95);
-        var blob = dataURLtoBlob(dataUrl);
-        var sizeMB = (blob.size / 1024 / 1024).toFixed(1);
-
-        // Show in overlay
+        // 3. Show in full-screen overlay — user long-presses to save
         els.saveResultImg.src = dataUrl;
         els.saveOverlay.classList.add('open');
 
-        // Trigger download
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'film-sim-' + Date.now() + '.jpg';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        // 4. Prepare blob for share button
+        try {
+          const resp = await fetch(dataUrl);
+          savedBlob = await resp.blob();
+        } catch (e) {
+          savedBlob = null;
+        }
 
-        // Restore canvas
-        els.glCanvas.width = origW; els.glCanvas.height = origH;
-        gl.viewport(0, 0, origW, origH);
-        updateQuadVerts(srcW, srcH);
-        render(currentMode);
-
-        showToast('已保存 ' + sizeMB + 'MB');
         track('save', getCurrentFilterName());
-      }, 200);
+
+      } catch (e) {
+        console.error('Save error:', e);
+        showToast('保存失败，请重试');
+      }
     }
 
-    function dataURLtoBlob(dataurl) {
-      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
-      var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-      while(n--){ u8arr[n] = bstr.charCodeAt(n); }
-      return new Blob([u8arr], {type:mime});
+    function closeSaveOverlay() {
+      els.saveOverlay.classList.remove('open');
+      // Don't revoke — dataUrl is managed by browser
+      savedBlob = null;
     }
 
-    function closeSaveOverlay() { els.saveOverlay.classList.remove('open'); }
+    async function shareSavedImage() {
+      if (!savedBlob || savedBlob.size < 100) {
+        // Re-grab from canvas
+        try {
+          const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
+          const resp = await fetch(dataUrl);
+          savedBlob = await resp.blob();
+        } catch (e) {
+          showToast('分享失败，请长按图片保存');
+          return;
+        }
+      }
 
-    function getCurrentFilterName() {
-      return [...FILTERS, ...customFilters].find(function(f){return f.id === currentFilterId;})?.name || '';
+      const filename = 'film-sim-' + Date.now() + '.jpg';
+      const file = new File([savedBlob], filename, { type: 'image/jpeg' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          showToast('已分享');
+          return;
+        } catch (e) {
+          // User cancelled — fall through
+          if (e.name !== 'AbortError') {
+            console.warn('Share error:', e);
+          }
+        }
+      }
+
+      // Fallback for Android: trigger download link
+      const url = URL.createObjectURL(savedBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('图片已下载');
     }
 
     function getCurrentFilterName() {
@@ -2536,55 +2288,20 @@
     }
 
     // ===================== CUSTOM LUT =====================
-    let selectedLibIds = new Set();
-
-    function renderFilmLibraryGrid() {
-      const grid = document.getElementById('film-library-grid'); if (!grid) return;
-      grid.innerHTML = FILM_LIBRARY.map((f, i) => {
-        const id = 'lib-' + i;
-        const alreadyAdded = customFilters.some(cf => cf.url === ('lib://' + i));
-        const sel = selectedLibIds.has(id);
-        return '<div class="film-lib-card' + (alreadyAdded ? ' added' : '') + (sel && !alreadyAdded ? ' selected' : '') + '" data-lib-id="' + id + '" data-lib-idx="' + i + '">' + f.name + '</div>';
-      }).join('');
-      grid.querySelectorAll('.film-lib-card:not(.added)').forEach(card => {
-        card.addEventListener('click', () => {
-          const id = card.dataset.libId;
-          if (selectedLibIds.has(id)) { selectedLibIds.delete(id); card.classList.remove('selected'); }
-          else { selectedLibIds.add(id); card.classList.add('selected'); }
-          updateConfirmButton();
-        });
-      });
-      updateConfirmButton();
-    }
-
-    function updateConfirmButton() {
-      if (!els.btnConfirmAdd) return;
-      const n = selectedLibIds.size;
-      els.btnConfirmAdd.textContent = n > 0 ? '确定添加（已选 ' + n + ' 个）' : '确定添加（已选 0 个）';
-      els.btnConfirmAdd.disabled = n === 0;
-    }
-
-    function batchAddSelectedFilters() {
-      if (selectedLibIds.size === 0) return;
-      selectedLibIds.forEach(id => {
-        const idx = parseInt(document.querySelector('[data-lib-id="' + id + '"]')?.dataset?.libIdx || '0');
-        if (isNaN(idx)) return; const f = FILM_LIBRARY[idx]; if (!f) return;
-        const fid = 'lib-' + idx;
-        if (customFilters.some(cf => cf.id === fid)) return;
-        const presetId = 7 + idx;
-        customFilters.push({ id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: presetId, params: f.params });
-        filterStates[fid] = { loaded: true, error: false, thumbDataUrl: null };
-      });
-      selectedLibIds.clear(); renderFilmLibraryGrid(); renderFilterCards();
-      const lastNew = customFilters[customFilters.length - 1]; if (lastNew && sourceImage) selectFilter(lastNew);
-      showToast('已添加，点击首页滤镜卡片即可使用');
-    }
-
     function openLUTModal() {
       els.lutModal.classList.add('open');
       els.lutUrlInput.value = '';
-      selectedLibIds.clear();
-      renderFilmLibraryGrid();
+      els.lutUrlInput.focus();
+
+      // Populate manual download links for all filters
+      const linksContainer = document.getElementById('manual-dl-links');
+      if (linksContainer) {
+        linksContainer.innerHTML = [...FILTERS, ...customFilters].map(f =>
+          `<a class="manual-dl-link" href="${f.url}" target="_blank" rel="noopener" download>
+            📥 ${f.name}
+          </a>`
+        ).join('');
+      }
     }
 
     function closeLUTModal() {
@@ -2721,43 +2438,6 @@
       }
     }
 
-    async function handleCubeFile(file) {
-      if (!file) return;
-      if (!file.name.toLowerCase().endsWith('.cube')) {
-        showToast('请选择 .cube 格式的 3D LUT 文件');
-        return;
-      }
-      try {
-        const text = await new Promise((r) => { const fr = new FileReader(); fr.onload = (e) => r(e.target.result); fr.readAsText(file); });
-        const cubeData = parseCubeFile(text);
-        if (!cubeData || cubeData.size < 2) { showToast('无效的 .cube 文件格式'); return; }
-        const name = file.name.replace(/\.cube$/i, '').replace(/[_-]/g, ' ').trim() || '自定义 LUT';
-        const id = 'cube-local-' + Date.now();
-        const fakeUrl = 'cube://' + file.name + '/' + Date.now();
-
-        // Store .cube data in IndexedDB for cache
-        await dbSetCustomFilter(id, { name, url: fakeUrl, cubeText: text });
-        // Also store raw text in LUT cache
-        lutCache[fakeUrl] = text;
-
-        const { tex, size } = create3DLUTTexture(cubeData);
-        set3DLUTTexture(tex, size);
-
-        const customFilter = { id, name, url: fakeUrl, isCustom: true, isCube: true };
-        customFilters.push(customFilter);
-        filterStates[id] = { loaded: true, error: false, thumbDataUrl: null };
-
-        closeLUTModal();
-        renderFilterCards();
-        showToast('3D LUT 滤镜已添加');
-        selectFilter(customFilter);
-
-      } catch (e) {
-        showToast('加载失败：' + e.message);
-        console.error('Cube file error:', e);
-      }
-    }
-
     // ===================== ANALYTICS =====================
     function track(action, filterName) {
       try {
@@ -2775,10 +2455,9 @@
       els.pageHome.classList.toggle('active', page === 'home');
       els.pageAbout.classList.toggle('active', page === 'about');
 
-      for (var nvI = 0; nvI < els.navBtns.length; nvI++) {
-        var nb = els.navBtns[nvI];
-        nb.classList.toggle('active', nb.dataset.page === page);
-      }
+      els.navBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.page === page);
+      });
 
       if (page === 'home') {
         // Re-render after page change (WebGL canvas may have been resized)
@@ -2875,12 +2554,11 @@
     });
 
     // Nav
-    for (var nvIdx = 0; nvIdx < els.navBtns.length; nvIdx++) {
-      var nvBtn = els.navBtns[nvIdx];
-      nvBtn.addEventListener('click', function(e) {
-        switchPage(e.currentTarget.dataset.page);
+    els.navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchPage(btn.dataset.page);
       });
-    }
+    });
 
     // LUT Modal
     els.lutUrlLoad.addEventListener('click', handleCustomLUTUrl);
@@ -2892,13 +2570,7 @@
       if (file) handleCustomLUTFile(file);
       els.lutFileInput.value = '';
     });
-    els.cubeFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) handleCubeFile(file);
-      els.cubeFileInput.value = '';
-    });
     els.lutModalClose.addEventListener('click', closeLUTModal);
-    els.btnConfirmAdd.addEventListener('click', batchAddSelectedFilters);
     els.lutModal.addEventListener('click', (e) => {
       if (e.target === els.lutModal) closeLUTModal();
     });
@@ -2922,57 +2594,147 @@
     }, { passive: false });
 
     // ===================== PWA REGISTRATION =====================
+    function registerPWA() {
+      // Service workers require HTTPS or localhost — skip on file://
+      const isFileProtocol = location.protocol === 'file:';
+      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-    // Quick fallback for boot errors
-    var categoryBar = document.getElementById('category-bar');
-    function bootMsg(msg, err) {
-      try {
-        if (categoryBar) {
-          categoryBar.classList.remove('hidden');
-          var isErr = err ? true : false;
-          categoryBar.innerHTML = '<span style=\"color:' + (isErr ? '#c05555' : '#c4956a') + '\">' + msg + '</span>';
-        }
-      } catch (_) {}
+      // Always inject manifest (works anywhere)
+      const manifest = {
+        name: '胶片模拟 Lab',
+        short_name: '胶片Lab',
+        description: '用数字的方式，感受银盐的温度',
+        start_url: location.href.split('?')[0].split('#')[0],
+        display: 'standalone',
+        background_color: '#1e1812',
+        theme_color: '#1e1812',
+        orientation: 'any',
+        icons: [
+          {
+            src: 'data:image/svg+xml,' + encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">' +
+              '<rect width="192" height="192" rx="32" fill="#1e1812"/>' +
+              '<rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/>' +
+              '<circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/>' +
+              '<circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/>' +
+              '<rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/>' +
+              '<text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text>' +
+              '</svg>'
+            ),
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          }
+        ]
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+
+      // Service worker only for HTTP(S) origins
+      if (isFileProtocol) {
+        console.log('📁 file:// mode — PWA install not available, all other features work');
+        return;
+      }
+
+      // On localhost: only register if user manually opens via http://
+      if (!('serviceWorker' in navigator)) return;
+
+      const swCode = `
+        const CACHE = 'film-lab-v2';
+        self.addEventListener('install', (e) => {
+          e.waitUntil(
+            caches.open(CACHE).then(cache => cache.add(self.location.href).catch(() => {}))
+          );
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', (e) => {
+          e.waitUntil(self.clients.claim());
+        });
+        self.addEventListener('fetch', (e) => {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.match(e.request).then(cached => {
+              const fetched = fetch(e.request).then(resp => {
+                if (resp.ok) {
+                  caches.open(CACHE).then(cache => cache.put(e.request, resp.clone()));
+                }
+                return resp;
+              }).catch(() => cached);
+              return cached || fetched;
+            })
+          );
+        });
+      `;
+
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+
+      navigator.serviceWorker.register(swUrl, { scope: '/' })
+        .then(() => console.log('PWA registered'))
+        .catch((e) => console.log('SW register skipped:', e.message));
     }
 
     // ===================== INIT =====================
-    try {
-      bootMsg('resize...');
-      resizeCanvas();
-
-      bootMsg('WebGL...');
-      var ok = initWebGL();
-      if (!ok) { bootMsg('WebGL FAIL', true); } else {
-        try { initThumbGL(); } catch(e) {}
-        clearCanvas();
-        bootMsg('WebGL OK');
-
-        bootMsg('cards...');
-        try { renderFilterCards(); } catch(e2) { bootMsg('cards FAIL: ' + (e2.message||'').slice(0,60), true); }
-
-        bootMsg('tabs...');
-        try { renderCategoryBar(); } catch(e3) { bootMsg('tabs FAIL: ' + (e3.message||'').slice(0,60), true); }
+    async function init() {
+      // Initialize IndexedDB
+      try {
+        dbPromise = openDB();
+        await dbPromise;
+      } catch (e) {
+        console.warn('IndexedDB not available, using in-memory cache');
+        dbPromise = null;
       }
 
-      // Async: DB + presets.json
-      setTimeout(function() {
-        (function() {
-          return openDB();
-        })().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
-          customFilters = (sc||[]).map(function(cf) {
-            return {id:cf.id,name:cf.name,url:cf.url,isCustom:true,isCube:cf.url&&cf.url.startsWith('cube://')};
-          });
-          customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:true,error:false,thumbDataUrl:null}; });
-        }).catch(function(){}).then(function() {
-          return loadPresetsJson();
-        }).then(function(pc) {
-          if (pc && pc.length) { presetCategories = pc; try { renderFilterCards(); renderCategoryBar(); } catch(e4) {} }
-        }).catch(function(){});
-      }, 500);
+      // Load custom filters from IndexedDB
+      const savedCustom = await dbGetCustomFilters();
+      customFilters = savedCustom.map(cf => ({
+        id: cf.id,
+        name: cf.name,
+        url: cf.url,
+        isCustom: true
+      }));
+      customFilters.forEach(cf => {
+        filterStates[cf.id] = { loaded: false, error: false, thumbDataUrl: null };
+      });
 
-    } catch (bootErr) {
-      bootMsg('CRASH: ' + (bootErr.message||'').slice(0,80), true);
-      console.error('Boot crash:', bootErr);
-    }</script>
+      // Init WebGL
+      resizeCanvas();
+      if (!initWebGL()) {
+        showToast('WebGL 初始化失败');
+        return;
+      }
+
+      // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
+      try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
+
+      // Render filter cards
+      renderFilterCards();
+
+      // Register PWA
+      registerPWA();
+
+      // Initial canvas clear — render background color even without source image
+      clearCanvas();
+
+      console.log('胶片模拟 Lab 已就绪');
+      console.log('协议:', location.protocol === 'file:' ? 'file://（离线模式）' : location.protocol);
+      console.log('滤镜数:', FILTERS.length + customFilters.length);
+      console.log('WebGL:', gl ? 'OK' : 'FAIL');
+      console.log('IndexedDB:', (await dbPromise) ? 'OK' : 'Fallback');
+      console.log('代理:', useProxy ? '自动（直连+多代理回退）' : '关闭');
+      if (location.protocol === 'file:') {
+        console.log('💡 PWA 安装仅在 http:// 下可用，其他功能无影响');
+      }
+    }
+
+    init().catch(console.error);
+
+  })();
+  </script>
 </body>
 </html>
