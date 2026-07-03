@@ -979,16 +979,10 @@
       </button>
     </nav>
 
-    <!-- ====== More Filters Modal ====== -->
+    <!-- ====== Custom LUT Modal ====== -->
     <div id="lut-modal" class="modal-overlay">
-      <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
-        <h3 class="serif">选择更多滤镜</h3>
-
-        <p style="color:var(--accent-dim);font-size:0.7rem;text-align:center;">🎞 胶片库（可多选）</p>
-        <div id="film-lib-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-height:240px;overflow-y:auto;padding:2px;"></div>
-        <div class="modal-actions"><button class="btn-primary" id="lib-confirm" disabled>确定添加（已选 0 个）</button></div>
-
-        <div class="modal-divider">或手动添加</div>
+      <div class="modal-sheet">
+        <h3 class="serif">添加自定义滤镜</h3>
 
         <div class="modal-input-group">
           <label>粘贴 HaldCLUT 图片 URL</label>
@@ -1000,8 +994,20 @@
 
         <div class="modal-divider">或</div>
 
-        <label class="modal-file-btn" for="lut-file-input">📁 从本地文件选取 HaldCLUT 图片</label>
+        <label class="modal-file-btn" for="lut-file-input">
+          📁 从本地文件选取 HaldCLUT 图片
+        </label>
         <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+
+        <div class="modal-divider">备用方案（100% 可靠）</div>
+
+        <div class="modal-manual-dl">
+          <p class="manual-dl-title">📥 手动下载 LUT 后导入</p>
+          <p class="manual-dl-desc">长按下方链接下载图片 → 再用上方「📁 从本地文件选取」导入。第一次下载后自动缓存。</p>
+          <div class="manual-dl-links" id="manual-dl-links">
+            <!-- Populated by JS -->
+          </div>
+        </div>
 
         <div class="modal-actions">
           <button class="btn-secondary" id="lut-modal-close">取消</button>
@@ -1035,6 +1041,11 @@
   </div>
 
   <script>
+  (function() {
+    'use strict';
+
+    // ===================== POLYFILLS =====================
+    // canvas.toBlob (Safari < 14)
     if (!HTMLCanvasElement.prototype.toBlob) {
       HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
         const dataUrl = this.toDataURL(type, quality);
@@ -1057,40 +1068,7 @@
       { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
     ];
 
-    // Film Library — all GPU shader presets, zero download, instant
-    var FILM_LIBRARY = [
-      { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
-      { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
-      { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
-      { name:'富士 Pro Neg Hi',   params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
-      { name:'富士 Pro Neg Std',  params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
-      { name:'富士 Pro 400H',     params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
-      { name:'富士 Superia 100',  params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
-      { name:'富士 Superia 400',  params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
-      { name:'富士 Superia 800',  params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
-      { name:'富士 Superia 1600', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
-      { name:'柯达 Portra 160 VC',params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
-      { name:'柯达 Portra 400 NC',params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
-      { name:'柯达 Gold 100',     params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
-      { name:'柯达 Gold 200',     params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
-      { name:'柯达 T-Max 100',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
-      { name:'柯达 T-Max 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
-      { name:'柯达 Tri-X 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
-      { name:'伊尔福 Delta 100',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
-      { name:'伊尔福 Delta 400',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
-      { name:'伊尔福 Delta 3200',  params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
-      { name:'伊尔福 FP4 Plus 125',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
-      { name:'伊尔福 Pan F Plus 50',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
-      { name:'宝丽来 Polachrome',  params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
-      { name:'富士 FP-100C',       params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
-      { name:'富士 FP-3000B',      params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
-      { name:'拍立得 600',         params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
-      { name:'拍立得 669',         params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
-      { name:'拍立得 690',         params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
-      { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] }
-    ];
-
-    const MAX_IMAGE_DIM = 4096;
+    const MAX_IMAGE_DIM = 2048;
     const DB_NAME = 'FilmLabDB';
     const DB_VERSION = 2;
     const STORE_LUTS = 'luts';
@@ -1123,7 +1101,6 @@
       lutUrlLoad: $('#lut-url-load'),
       lutFileInput: $('#lut-file-input'),
       lutModalClose: $('#lut-modal-close'),
-      libConfirm: $('#lib-confirm'),
       toast: $('#toast'),
       proxyBadge: $('#proxy-badge'),
       saveOverlay: $('#save-overlay'),
@@ -1136,8 +1113,7 @@
     let sourceImage = null;        // HTMLImageElement (resized)
     let currentFilterId = null;
     let currentClutTexture = null;
-    let currentFilter = null;
-    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=CLUT, 7+=param presets
+    let currentMode = 0;          // 0=passthrough, 1-5=presets, 6=external CLUT
     let useProxy = true;           // try CORS proxies when direct fetch fails
     let customFilters = [];
     let lutCache = {};            // in-memory fallback: url -> blob
@@ -1248,10 +1224,7 @@
       uniform sampler2D u_source;
       uniform sampler2D u_clut;
       uniform float u_clutSize;
-      uniform float u_mode; // 0=passthrough, 1-5=builtin, 6=external CLUT, 7+=param presets
-      // Parameterized preset uniforms (mode >= 7)
-      uniform vec3 u_fslope, u_foffset, u_fpower;
-      uniform float u_fsat, u_fcont, u_fgrain, u_ftintR, u_ftintB;
+      uniform float u_mode; // 0=passthrough, 1-5=builtin presets, 6=external CLUT
 
       // ---- HaldCLUT lookup (mode 6) ----
       vec3 sampleClut(vec3 rgb) {
@@ -1340,17 +1313,6 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // Parameterized preset from uniforms (mode >= 7)
-      vec3 applyParamPreset(vec3 c, vec2 uv) {
-        if (u_fgrain > 0.01) {
-          float lum = dot(c, vec3(0.30, 0.59, 0.11)); lum = (lum - 0.5) * u_fcont + 0.5;
-          float n = hash(uv * 1024.0 + fract(uv*137.0)) + hash(uv * 2048.0 - fract(uv*79.0)*0.5);
-          n = (n - 0.5) * u_fgrain * 0.07; n *= 1.0 - abs(lum - 0.5) * 1.2;
-          lum = clamp(lum + n, 0.0, 1.0); c = vec3(lum);
-        } else { c = ascCDL(c, u_fslope, u_foffset, u_fpower); c = saturate(c, u_fsat); c = contrast(c, u_fcont); }
-        return clamp(c, 0.0, 1.0);
-      }
-
       void main() {
         vec4 color = texture2D(u_source, v_texCoord);
         int mode = int(u_mode + 0.5);
@@ -1359,9 +1321,6 @@
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode == 6) {
           vec3 filtered = sampleClut(color.rgb);
-          gl_FragColor = vec4(filtered, color.a);
-        } else if (mode >= 7) {
-          vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
           gl_FragColor = vec4(filtered, color.a);
         } else {
           gl_FragColor = color;
@@ -1568,19 +1527,6 @@
 
       // Set mode — MUST use uniform1f (shader uniform is float, not int)
       gl.uniform1f(uModeLoc, mode);
-
-      // Set param preset uniforms (mode >= 7)
-      if (mode >= 7 && currentFilter && currentFilter.params) {
-        var p = currentFilter.params;
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fslope'), p[0], p[1], p[2]);
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_foffset'), p[3], p[4], p[5]);
-        gl.uniform3f(gl.getUniformLocation(glProgram, 'u_fpower'), p[6], p[7], p[8]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fsat'), p[9]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fcont'), p[10]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_fgrain'), p[11]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintR'), p[12]);
-        gl.uniform1f(gl.getUniformLocation(glProgram, 'u_ftintB'), p[13]);
-      }
 
       // Vertex positions
       const posLoc = gl.getAttribLocation(glProgram, 'a_position');
@@ -2048,7 +1994,7 @@
       addCard.className = 'filter-card add-card';
       addCard.innerHTML = `
         <span class="add-icon">+</span>
-        <span class="add-label">更多<br>滤镜</span>
+        <span class="add-label">自定义<br>滤镜</span>
       `;
       addCard.addEventListener('click', openLUTModal);
       strip.appendChild(addCard);
@@ -2089,7 +2035,7 @@
     }
 
     function selectFilter(filter) {
-      currentFilterId = filter.id; currentFilter = filter;
+      currentFilterId = filter.id;
       const state = filterStates[filter.id] || { loaded: false, error: false };
       filterStates[filter.id] = state;
       state.loaded = true;
@@ -2342,56 +2288,20 @@
     }
 
     // ===================== CUSTOM LUT =====================
-    var selectedLibIds = {};
-
-    function renderFilmLibGrid() {
-      var g = document.getElementById('film-lib-grid');
-      if (!g) return;
-      g.innerHTML = FILM_LIBRARY.map(function(f, i) {
-        var id = 'lib-' + i;
-        var already = customFilters.some(function(cf) { return cf.url === ('lib://' + i); });
-        var sel = selectedLibIds[id];
-        return '<div class="flc' + (already ? ' added' : '') + (sel ? ' selected' : '') + '" data-lid="' + id + '" data-lidx="' + i + '" style="background:var(--bg-card);border:2px solid ' + (sel ? 'var(--accent)' : (already ? 'var(--accent-dim)' : 'transparent')) + ';border-radius:8px;padding:10px 4px;text-align:center;cursor:' + (already ? 'default' : 'pointer') + ';font-size:0.66rem;color:var(--text);' + (already ? 'opacity:0.6' : '') + '">' + f.name + (already ? ' ✓' : '') + '</div>';
-      }).join('');
-      g.querySelectorAll('.flc:not(.added)').forEach(function(c) {
-        c.addEventListener('click', function() {
-          var id = this.dataset.lid;
-          if (selectedLibIds[id]) { delete selectedLibIds[id]; this.style.borderColor = 'transparent'; }
-          else { selectedLibIds[id] = true; this.style.borderColor = 'var(--accent)'; }
-          updateLibConfirm();
-        });
-      });
-      updateLibConfirm();
-    }
-    function updateLibConfirm() {
-      var b = els.libConfirm; if (!b) return;
-      var n = Object.keys(selectedLibIds).length;
-      b.textContent = n > 0 ? '确定添加（已选 ' + n + ' 个）' : '确定添加（已选 0 个）';
-      b.disabled = n === 0;
-    }
-    function batchAddSelected() {
-      var ids = Object.keys(selectedLibIds);
-      if (!ids.length) return;
-      ids.forEach(function(id) {
-        var idx = parseInt(document.querySelector('[data-lid="' + id + '"]').dataset.lidx);
-        var f = FILM_LIBRARY[idx]; if (!f) return;
-        var fid = 'lib-' + idx;
-        if (customFilters.some(function(cf) { return cf.id === fid; })) return;
-        var pf = { id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: 7 + idx, params: f.params };
-        customFilters.push(pf);
-        filterStates[fid] = { loaded: true, error: false, thumbDataUrl: null };
-      });
-      selectedLibIds = {};
-      renderFilmLibGrid();
-      renderFilterCards();
-      showToast('已添加，点击首页滤镜卡片即可使用');
-    }
-
     function openLUTModal() {
       els.lutModal.classList.add('open');
       els.lutUrlInput.value = '';
-      selectedLibIds = {};
-      renderFilmLibGrid();
+      els.lutUrlInput.focus();
+
+      // Populate manual download links for all filters
+      const linksContainer = document.getElementById('manual-dl-links');
+      if (linksContainer) {
+        linksContainer.innerHTML = [...FILTERS, ...customFilters].map(f =>
+          `<a class="manual-dl-link" href="${f.url}" target="_blank" rel="noopener" download>
+            📥 ${f.name}
+          </a>`
+        ).join('');
+      }
     }
 
     function closeLUTModal() {
@@ -2661,7 +2571,6 @@
       els.lutFileInput.value = '';
     });
     els.lutModalClose.addEventListener('click', closeLUTModal);
-    els.libConfirm.addEventListener('click', batchAddSelected);
     els.lutModal.addEventListener('click', (e) => {
       if (e.target === els.lutModal) closeLUTModal();
     });
@@ -2771,27 +2680,61 @@
     }
 
     // ===================== INIT =====================
-    // ===================== DIRECT BOOT =====================
-    // Synchronous start — like safari-test.html which works on all devices
-    resizeCanvas();
-    if (initWebGL()) {
-      try { initThumbGL(); } catch(e) {}
-      clearCanvas();
+    async function init() {
+      // Initialize IndexedDB
+      try {
+        dbPromise = openDB();
+        await dbPromise;
+      } catch (e) {
+        console.warn('IndexedDB not available, using in-memory cache');
+        dbPromise = null;
+      }
+
+      // Load custom filters from IndexedDB
+      const savedCustom = await dbGetCustomFilters();
+      customFilters = savedCustom.map(cf => ({
+        id: cf.id,
+        name: cf.name,
+        url: cf.url,
+        isCustom: true
+      }));
+      customFilters.forEach(cf => {
+        filterStates[cf.id] = { loaded: false, error: false, thumbDataUrl: null };
+      });
+
+      // Init WebGL
+      resizeCanvas();
+      if (!initWebGL()) {
+        showToast('WebGL 初始化失败');
+        return;
+      }
+
+      // Init thumb GL (optional, may fail on dual-context-limited mobile GPUs)
+      try { initThumbGL(); } catch (e) { thumbGL = null; console.warn('Thumb GL init skipped:', e.message); }
+
+      // Render filter cards
       renderFilterCards();
+
+      // Register PWA
+      registerPWA();
+
+      // Initial canvas clear — render background color even without source image
+      clearCanvas();
+
+      console.log('胶片模拟 Lab 已就绪');
+      console.log('协议:', location.protocol === 'file:' ? 'file://（离线模式）' : location.protocol);
+      console.log('滤镜数:', FILTERS.length + customFilters.length);
+      console.log('WebGL:', gl ? 'OK' : 'FAIL');
+      console.log('IndexedDB:', (await dbPromise) ? 'OK' : 'Fallback');
+      console.log('代理:', useProxy ? '自动（直连+多代理回退）' : '关闭');
+      if (location.protocol === 'file:') {
+        console.log('💡 PWA 安装仅在 http:// 下可用，其他功能无影响');
+      }
     }
 
-    // PWA manifest only — no Service Worker
-    try { registerPWA(); } catch(e) {}
+    init().catch(console.error);
 
-    // Async: DB + custom filters (non-blocking)
-    setTimeout(function() {
-      try {
-        openDB().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
-          customFilters = (sc||[]).map(function(cf) { return {id:cf.id,name:cf.name,url:cf.url,isCustom:true}; });
-          customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:false,error:false,thumbDataUrl:null}; });
-        }).catch(function(){});
-      } catch(e) {}
-    }, 500);
+  })();
   </script>
 </body>
 </html>
