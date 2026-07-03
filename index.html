@@ -979,10 +979,16 @@
       </button>
     </nav>
 
-    <!-- ====== Custom LUT Modal ====== -->
+    <!-- ====== More Filters Modal ====== -->
     <div id="lut-modal" class="modal-overlay">
-      <div class="modal-sheet">
-        <h3 class="serif">添加自定义滤镜</h3>
+      <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
+        <h3 class="serif">选择更多滤镜</h3>
+
+        <p style="color:var(--accent-dim);font-size:0.7rem;text-align:center;">🎞 胶片库（可多选）</p>
+        <div id="film-lib-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-height:240px;overflow-y:auto;padding:2px;"></div>
+        <div class="modal-actions"><button class="btn-primary" id="lib-confirm" disabled>确定添加（已选 0 个）</button></div>
+
+        <div class="modal-divider">或手动添加</div>
 
         <div class="modal-input-group">
           <label>粘贴 HaldCLUT 图片 URL</label>
@@ -994,20 +1000,8 @@
 
         <div class="modal-divider">或</div>
 
-        <label class="modal-file-btn" for="lut-file-input">
-          📁 从本地文件选取 HaldCLUT 图片
-        </label>
+        <label class="modal-file-btn" for="lut-file-input">📁 从本地文件选取 HaldCLUT 图片</label>
         <input type="file" id="lut-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
-
-        <div class="modal-divider">备用方案（100% 可靠）</div>
-
-        <div class="modal-manual-dl">
-          <p class="manual-dl-title">📥 手动下载 LUT 后导入</p>
-          <p class="manual-dl-desc">长按下方链接下载图片 → 再用上方「📁 从本地文件选取」导入。第一次下载后自动缓存。</p>
-          <div class="manual-dl-links" id="manual-dl-links">
-            <!-- Populated by JS -->
-          </div>
-        </div>
 
         <div class="modal-actions">
           <button class="btn-secondary" id="lut-modal-close">取消</button>
@@ -1063,7 +1057,40 @@
       { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' }
     ];
 
-    const MAX_IMAGE_DIM = 2048;
+    // Film Library — all GPU shader presets, zero download, instant
+    var FILM_LIBRARY = [
+      { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
+      { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
+      { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
+      { name:'富士 Pro Neg Hi',   params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
+      { name:'富士 Pro Neg Std',  params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
+      { name:'富士 Pro 400H',     params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
+      { name:'富士 Superia 100',  params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
+      { name:'富士 Superia 400',  params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
+      { name:'富士 Superia 800',  params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
+      { name:'富士 Superia 1600', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
+      { name:'柯达 Portra 160 VC',params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
+      { name:'柯达 Portra 400 NC',params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
+      { name:'柯达 Gold 100',     params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
+      { name:'柯达 Gold 200',     params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
+      { name:'柯达 T-Max 100',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
+      { name:'柯达 T-Max 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
+      { name:'柯达 Tri-X 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
+      { name:'伊尔福 Delta 100',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
+      { name:'伊尔福 Delta 400',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
+      { name:'伊尔福 Delta 3200',  params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
+      { name:'伊尔福 FP4 Plus 125',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
+      { name:'伊尔福 Pan F Plus 50',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
+      { name:'宝丽来 Polachrome',  params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
+      { name:'富士 FP-100C',       params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
+      { name:'富士 FP-3000B',      params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
+      { name:'拍立得 600',         params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
+      { name:'拍立得 669',         params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
+      { name:'拍立得 690',         params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
+      { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] }
+    ];
+
+    const MAX_IMAGE_DIM = 4096;
     const DB_NAME = 'FilmLabDB';
     const DB_VERSION = 2;
     const STORE_LUTS = 'luts';
@@ -1096,6 +1123,7 @@
       lutUrlLoad: $('#lut-url-load'),
       lutFileInput: $('#lut-file-input'),
       lutModalClose: $('#lut-modal-close'),
+      libConfirm: $('#lib-confirm'),
       toast: $('#toast'),
       proxyBadge: $('#proxy-badge'),
       saveOverlay: $('#save-overlay'),
