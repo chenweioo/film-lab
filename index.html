@@ -2169,7 +2169,7 @@
           set3DLUTTexture(tex.tex, tex.size);
           currentMode = 8; render(8);
           hidePreviewLoading();
-          setTimeout(function() { capturePreviewThumbnail(filter.id); updateFilterCardUI(filter.id); }, 100);
+          setTimeout(function() { capturePreviewThumbnail(filter.id); }, 600);
           track('apply', filter.name);
         }).catch(function(e) {
           hidePreviewLoading();
@@ -2178,15 +2178,12 @@
         return;
       }
 
-      // Built-in preset: render instantly (GPU shader, no download)
+      // Built-in / film library preset: render instantly (GPU shader, no download)
       if (filter.preset) {
         currentMode = filter.preset;
         render(currentMode);
         updateFilterCardUI(filter.id);
-
-        // Generate thumbnail preview from rendered canvas
-        capturePreviewThumbnail(filter.id);
-
+        setTimeout(function() { capturePreviewThumbnail(filter.id); }, 600);
         track('apply', filter.name);
         return;
       }
