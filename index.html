@@ -450,39 +450,16 @@
     }
 
     /* ========== About Page ========== */
-    #page-about {
-      padding: 32px 24px;
-      gap: 24px;
-      align-items: center;
-    }
-    #page-about .about-logo {
-      font-size: 3rem;
-      opacity: 0.6;
-    }
-    #page-about .about-text {
-      text-align: center;
-      line-height: 1.8;
-      max-width: 320px;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      letter-spacing: 0.04em;
-    }
-    #page-about .about-text strong {
-      color: var(--accent);
-      font-weight: 400;
-    }
-    #page-about .about-credits {
-      text-align: center;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      opacity: 0.6;
-      line-height: 1.8;
-      letter-spacing: 0.03em;
-    }
-    #page-about .about-credits a {
-      color: var(--accent-dim);
-      text-decoration: none;
-    }
+    #page-about { padding: 48px 32px; gap: 24px; align-items: center; justify-content: center; }
+    #page-about .about-logo { font-size: 2.6rem; opacity: 0.35; align-self: center; }
+    #page-about .about-tagline { font-size: 2rem; line-height: 1.6; color: var(--text); text-align: center; max-width: 300px; align-self: center; }
+    #page-about .about-tagline strong.about-highlight { color: var(--accent); font-weight: 700; font-style: italic; letter-spacing: 0.08em; font-family: Georgia, 'Noto Serif SC', 'SimSun', serif; }
+    .about-divider { width: 36px; height: 2px; background: var(--accent); opacity: 0.3; border-radius: 1px; align-self: center; }
+    .about-creator { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; width: 100%; max-width: 260px; align-self: center; }
+    .about-creator-name { font-size: 1rem; color: var(--accent); font-weight: 700; letter-spacing: 0.06em; text-align: left; width: 100%; }
+    .about-creator-bio { font-size: 0.82rem; color: var(--text-muted); line-height: 1.9; letter-spacing: 0.04em; text-align: left; width: 100%; }
+    .about-creator-contact { font-size: 0.78rem; color: var(--accent-dim); letter-spacing: 0.04em; line-height: 1.8; text-align: left; width: 100%; }
+    #page-about .about-credits { text-align: center; font-size: 0.6rem; color: var(--text-muted); opacity: 0.4; line-height: 1.8; letter-spacing: 0.03em; margin-top: 8px; padding-bottom: 20px; }
 
     /* ========== Bottom Nav ========== */
     #bottom-nav {
@@ -943,21 +920,15 @@
     <!-- ====== About Page ====== -->
     <div id="page-about" class="page">
       <div class="about-logo serif">📷</div>
-      <h1 class="serif" style="font-size:1.5rem;">胶片模拟 Lab</h1>
-      <p class="about-text serif">
-        用数字的方式，感受<strong>银盐的温度</strong>。<br><br>
-        LUT 资源来自 <strong>RawPedia</strong>，<br>
-        灵感源自 <strong>sunnyspeedstudio</strong> 的<br>
-        batch-film-simulation。
-      </p>
-      <div class="about-credits">
-        技术实现：WebGL HaldCLUT<br>
-        缓存：IndexedDB<br>
-        <br>
-        <a href="https://rawpedia.rawtherapee.com/" target="_blank" rel="noopener">
-          RawPedia 资源 →
-        </a>
+      <h1 class="serif about-tagline">用数字的方式，<br>感受<strong class="about-highlight">银盐的温度</strong>。</h1>
+      <div class="about-divider"></div>
+      <div class="about-creator">
+        <p class="about-creator-name">创作者：阿伟</p>
+        <p class="about-creator-bio">一名摄影爱好者，<br>也是一位数字胶片探索者，<br>尝试用最简单的方式和最低的成本<br>实现胶片模拟。</p>
+        <p class="about-creator-contact">联系与合作：15832241535</p>
+        <p class="about-creator-contact">建议与反馈（微信）：aweihuilaile</p>
       </div>
+      <div class="about-credits">胶片 LUT 资源来自 RawPedia，<br>灵感源自 sunnyspeedstudio 的 batch-film-simulation。</div>
     </div>
 
     <!-- ====== Bottom Nav ====== -->
