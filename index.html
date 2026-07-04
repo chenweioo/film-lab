@@ -1042,18 +1042,12 @@
     // Built-in film presets: pure GLSL, no download needed, instant.
     // url is kept for optional manual download (available via "+" modal).
     var FILTER_CATEGORIES = [
-      { key:'ziyan',    label:'自研',   sub:'柯达 5207' },
-      { key:'classic',  label:'经典款', sub:'' },
-      { key:'more',     label:'更多',   sub:'' }
+      { key:'ziyan',           label:'自研 · 柯达 5207' },
+      { key:'classic-fuji',    label:'经典款 · 富士' },
+      { key:'classic-kodak',   label:'经典款 · 柯达' },
+      { key:'classic-ilford',  label:'经典款 · 伊尔福' },
+      { key:'classic-other',   label:'经典款 · 其他' }
     ];
-    var FILTER_SUB = {
-      'ziyan':           '柯达 5207',
-      'classic-fuji':    '经典款-富士',
-      'classic-kodak':   '经典款-柯达',
-      'classic-ilford':  '经典款-伊尔福',
-      'classic-other':   '经典款-其他',
-      'more':            ''
-    };
 
     const FILTERS = [
       { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, cat:'classic-fuji', url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
@@ -2178,15 +2172,7 @@
         strip.appendChild(card);
       }
 
-      // Add "+" card
-      const addCard = document.createElement('div');
-      addCard.className = 'filter-card add-card';
-      addCard.innerHTML = `
-        <span class="add-icon">+</span>
-        <span class="add-label">更多<br>滤镜</span>
-      `;
-      addCard.addEventListener('click', openLUTModal);
-      strip.appendChild(addCard);
+      // No "+" card — all filters live under category tabs now
     }
 
     // ===================== CORE ACTIONS =====================
