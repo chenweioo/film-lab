@@ -2808,16 +2808,42 @@
 
     // ===================== PWA REGISTRATION =====================
     function registerPWA() {
-      // Manifest only – NO Service Worker to avoid stale caching
-      var m = {
-        name:'胶片模拟 Lab',short_name:'胶片Lab',description:'用数字的方式，感受银盐的温度',
-        start_url:location.href.split('?')[0].split('#')[0],display:'standalone',
-        background_color:'#1e1812',theme_color:'#1e1812',orientation:'any',
-        icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="#1e1812"/><rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/><circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/><circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/><rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/><text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text></svg>'),sizes:'192x192',type:'image/svg+xml',purpose:'any'}]
+      // Manifest-only — no Service Worker (SW caused persistent caching bugs)
+      var manifest = {
+        name: '胶片模拟 Lab',
+        short_name: '胶片Lab',
+        description: '用数字的方式，感受银盐的温度',
+        start_url: location.href.split('?')[0].split('#')[0],
+        display: 'standalone',
+        background_color: '#1e1812',
+        theme_color: '#1e1812',
+        orientation: 'any',
+        icons: [
+          {
+            src: 'data:image/svg+xml,' + encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">' +
+              '<rect width="192" height="192" rx="32" fill="#1e1812"/>' +
+              '<rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/>' +
+              '<circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/>' +
+              '<circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/>' +
+              '<rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/>' +
+              '<text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text>' +
+              '</svg>'
+            ),
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          }
+        ]
       };
-      var b=new Blob([JSON.stringify(m)],{type:'application/json'});
-      var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
-      document.head.appendChild(l);
+
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+
     }
 
     // ===================== INIT =====================
@@ -2828,7 +2854,7 @@
     try { initThumbGL(); } catch(e) {}
     try { clearCanvas(); } catch(e) {}
     try { renderFilterCards(); } catch(e) {}
-    try { renderCategoryTabs(); } catch(e) { console.error('tabs error:', e); }
+    try { renderCategoryTabs(); } catch(e) {}
 
     // PWA manifest only — no Service Worker
     try { registerPWA(); } catch(e) {}
