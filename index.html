@@ -2301,62 +2301,15 @@
 
     function generateAllThumbnails() {
       if (!sourceImage) return;
+      // Do NOT render on the main visible canvas.
+      // Thumbnails are generated on-demand when the user taps a filter card.
+      // Mark all states as needing a thumbnail.
       var allFilters = [].concat(FILTERS, customFilters);
-
-      function processNext(idx) {
-        if (idx >= allFilters.length) { render(0); renderFilterCards(); return; }
-        var filter = allFilters[idx];
-        var state = filterStates[filter.id];
-        if (!state) { filterStates[filter.id] = { loaded: false, error: false, thumbDataUrl: null }; state = filterStates[filter.id]; }
-        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') { processNext(idx + 1); return; }
-
-        // Built-in preset: render+capture+restore in one quick cycle
-        if (filter.preset && !filter.isCustom) {
-          try {
-            render(filter.preset);
-            setTimeout(function() {
-              capturePreviewThumbnail(filter.id);
-              render(0);
-              processNext(idx + 1);
-            }, 80);
-          } catch(e) { render(0); processNext(idx + 1); }
-          return;
-        }
-
-        // Cube 3D LUT
-        if (filter.isCube) {
-          loadCubeFromServer(filter.url).then(function(cubeD) {
-            if (!cubeD || cubeD.size < 2) { processNext(idx + 1); return; }
-            for (var si = 0; si < cubeD.data.length; si += 3) {
-              var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
-            }
-            var tex = create3DLUTTexture(cubeD);
-            set3DLUTTexture(tex.tex, tex.size);
-            currentMode = 8; render(8);
-            setTimeout(function() {
-              capturePreviewThumbnail(filter.id);
-              render(0);
-              processNext(idx + 1);
-            }, 80);
-          }).catch(function() { render(0); processNext(idx + 1); });
-          return;
-        }
-
-        // Custom HaldCLUT
-        try {
-          loadLUTImage(filter.url).then(function(result) {
-            setClutTexture(result.img, result.blobUrl);
-            currentMode = 6; render(6);
-            setTimeout(function() {
-              capturePreviewThumbnail(filter.id);
-              render(0);
-              processNext(idx + 1);
-            }, 80);
-          }).catch(function() { render(0); processNext(idx + 1); });
-        } catch(e) { render(0); processNext(idx + 1); }
+      for (var idx = 0; idx < allFilters.length; idx++) {
+        var f = allFilters[idx];
+        if (!filterStates[f.id]) filterStates[f.id] = { loaded: true, error: false, thumbDataUrl: null };
       }
-
-      processNext(0);
+      renderFilterCards();
     }
 
     function loadCubeFromServer(url) {
