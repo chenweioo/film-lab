@@ -2169,7 +2169,7 @@
       var tabs = bar.querySelectorAll('.cat-tab');
       for (var j = 0; j < tabs.length; j++) {
         (function(t) {
-          t.addEventListener('click', function() { currentCat = this.dataset.cat; renderCategoryTabs(); renderFilterCards(); });
+          t.addEventListener('click', function() { currentCat = this.dataset.cat; renderCategoryTabs(); renderFilterCards(); generateVisibleThumbnails(); });
         })(tabs[j]);
       }
       var active = bar.querySelector('.cat-tab.active');
@@ -2344,59 +2344,74 @@
 
       // Render raw photo (no filter auto-selected)
       render(0);
+
       // Clear all previous thumbnails so new ones are generated for new photo
       var allF = [].concat(FILTERS, customFilters);
       for (var afi = 0; afi < allF.length; afi++) {
         var afs = filterStates[allF[afi].id];
-        if (afs) { afs.thumbDataUrl = allF[afi].preset && !allF[afi].isCustom ? 'preset' : null; }
+        if (afs) { afs.thumbDataUrl = null; }
       }
       renderFilterCards();
-      // Generate all filter thumbnails in background
-      setTimeout(function() { generateAllThumbnails(); }, 300);
+
+      // Generate thumbnails ONLY for currently visible category (lazy)
+      setTimeout(function() { generateVisibleThumbnails(); }, 400);
     }
 
-    function generateAllThumbnails() {
+    function generateVisibleThumbnails() {
       if (!sourceImage) return;
 
-      var allFilters = [].concat(FILTERS, customFilters);
-
-      // Process built-in presets synchronously (GPU render→capture→restore in one microtask)
-      for (var bi = 0; bi < allFilters.length; bi++) {
-        var bf = allFilters[bi];
-        if (!bf.preset || bf.isCustom) continue;
-        var bst = filterStates[bf.id];
-        if (!bst) { filterStates[bf.id] = { loaded: false, error: false, thumbDataUrl: null }; bst = filterStates[bf.id]; }
-        if (bst.thumbDataUrl && bst.thumbDataUrl !== 'preset') continue;
-        try { render(bf.preset); capturePreviewThumbnail(bf.id); } catch(e) {}
+      // Get filters that match current category
+      var visibleFilters = [];
+      for (var i = 0; i < FILTERS.length; i++) {
+        var f = FILTERS[i];
+        if (!f.cat || f.cat === currentCat) visibleFilters.push(f);
       }
-      render(0); renderFilterCards();
-
-      // Process cube LUTs and HaldCLUT in a single background chain
-      var rest = [];
-      for (var ci = 0; ci < allFilters.length; ci++) {
-        var cf = allFilters[ci];
-        if (cf.preset && !cf.isCustom) continue;
-        rest.push(cf);
+      for (var j = 0; j < customFilters.length; j++) {
+        var cf = customFilters[j];
+        if (!cf.cat || cf.cat === currentCat) visibleFilters.push(cf);
       }
-      function processRest(idx) {
-        if (idx >= rest.length) { render(0); renderFilterCards(); return; }
-        var rf = rest[idx];
-        var rstate = filterStates[rf.id];
-        if (!rstate) { filterStates[rf.id] = { loaded: false, error: false, thumbDataUrl: null }; rstate = filterStates[rf.id]; }
-        if (rstate.thumbDataUrl && rstate.thumbDataUrl !== 'preset') { processRest(idx + 1); return; }
-        if (rf.isCube) {
-          loadCubeFromServer(rf.url).then(function(cd) {
+
+      function step(idx) {
+        if (idx >= visibleFilters.length) { render(0); renderFilterCards(); return; }
+        var f = visibleFilters[idx];
+        var st = filterStates[f.id];
+        if (!st) { filterStates[f.id] = { loaded: false, error: false, thumbDataUrl: null }; st = filterStates[f.id]; }
+        if (st.thumbDataUrl === 'done') { step(idx + 1); return; }
+
+        if (f.preset && !f.isCustom) {
+          // Built-in: render+capture+restore in one block
+          try { render(f.preset); capturePreviewThumbnail(f.id); } catch(e) {}
+          render(0);
+          step(idx + 1);
+          return;
+        }
+
+        if (f.isCube) {
+          loadCubeFromServer(f.url).then(function(cd) {
             if (!cd || cd.size < 2) return;
             for (var si = 0; si < cd.data.length; si += 3) { var t = cd.data[si]; cd.data[si] = cd.data[si+2]; cd.data[si+2] = t; }
             var tex = create3DLUTTexture(cd); set3DLUTTexture(tex.tex, tex.size);
             var saved = currentMode; currentMode = 8; render(8);
-            capturePreviewThumbnail(rf.id); currentMode = saved; render(saved);
+            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
             renderFilterCards();
           }).catch(function(){});
+          step(idx + 1);
+          return;
         }
-        processRest(idx + 1);
+
+        // HaldCLUT
+        try {
+          loadLUTImage(f.url).then(function(result) {
+            setClutTexture(result.img, result.blobUrl);
+            var saved = currentMode; currentMode = 6; render(6);
+            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
+            renderFilterCards();
+          }).catch(function(){});
+        } catch(e) {}
+        step(idx + 1);
       }
-      processRest(0);
+
+      step(0);
     }
 
     function loadCubeFromServer(url) {
