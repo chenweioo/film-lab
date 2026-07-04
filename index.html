@@ -283,6 +283,15 @@
       padding: 4px 4px 0;
     }
 
+    /* Category Tabs */
+    .cat-bar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 6px; flex-shrink: 0; scrollbar-width: none; }
+    .cat-bar::-webkit-scrollbar { display: none; }
+    .cat-tab { flex: 0 0 auto; padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s; }
+    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
+    .cat-tab:active { transform: scale(0.96); }
+    .cat-sub { display: none; }
+    .cat-bar.has-sub .cat-sub { display: flex; }
+
     #filter-strip {
       display: flex;
       gap: 10px;
@@ -912,6 +921,9 @@
         </button>
       </div>
 
+      <!-- Category Tab Bar -->
+      <div id="cat-bar" class="cat-bar"></div>
+
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
       <div id="filter-strip">
@@ -1029,30 +1041,44 @@
     // ===================== CONSTANTS =====================
     // Built-in film presets: pure GLSL, no download needed, instant.
     // url is kept for optional manual download (available via "+" modal).
+    var FILTER_CATEGORIES = [
+      { key:'ziyan',    label:'自研',   sub:'柯达 5207' },
+      { key:'classic',  label:'经典款', sub:'' },
+      { key:'more',     label:'更多',   sub:'' }
+    ];
+    var FILTER_SUB = {
+      'ziyan':           '柯达 5207',
+      'classic-fuji':    '经典款-富士',
+      'classic-kodak':   '经典款-柯达',
+      'classic-ilford':  '经典款-伊尔福',
+      'classic-other':   '经典款-其他',
+      'more':            ''
+    };
+
     const FILTERS = [
-      { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
-      { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
-      { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
-      { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
-      { id:'n5207',  name:'N 5207', isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/N%205207.cube' },
-      { id:'s15207', name:'S1 5207',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S1%205207.cube' },
-      { id:'s25207', name:'S2 5207',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S2%205207.cube' },
-      { id:'yplus1', name:'原色 +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'yplus2', name:'原色 +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'yminus1',name:'原色 -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'yminus2',name:'原色 -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'ysS',    name:'原色 -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
-      { id:'bplus1', name:'标准 +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'bplus2', name:'标准 +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'bminus1',name:'标准 -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'bminus2',name:'标准 -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'bsS',    name:'标准 -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
-      { id:'b2plus1',name:'标II +1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'b2plus2',name:'标II +2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'b2minus1',name:'标II -1',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'b2minus2',name:'标II -2',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'b2S',    name:'标II -S',isCube:true, url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' }
+      { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, cat:'classic-fuji', url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
+      { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, cat:'classic-fuji', url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
+      { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, cat:'classic-kodak', url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
+      { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, cat:'classic-kodak', url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, cat:'classic-ilford', url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
+      { id:'n5207',  name:'N 5207', isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/N%205207.cube' },
+      { id:'s15207', name:'S1 5207',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S1%205207.cube' },
+      { id:'s25207', name:'S2 5207',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S2%205207.cube' },
+      { id:'yplus1', name:'原色 +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'yplus2', name:'原色 +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'yminus1',name:'原色 -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'yminus2',name:'原色 -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'ysS',    name:'原色 -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
+      { id:'bplus1', name:'标准 +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'bplus2', name:'标准 +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'bminus1',name:'标准 -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'bminus2',name:'标准 -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'bsS',    name:'标准 -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
+      { id:'b2plus1',name:'标II +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
+      { id:'b2plus2',name:'标II +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
+      { id:'b2minus1',name:'标II -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
+      { id:'b2minus2',name:'标II -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
+      { id:'b2S',    name:'标II -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' }
     ];
 
     // Film Library — all GPU shader presets, zero download, instant
@@ -1141,6 +1167,7 @@
     let lutCache = {};            // in-memory fallback: url -> blob
     let filterStates = {};        // id -> { loaded: bool, error: bool, thumbDataUrl: string|null }
     let toastTimer = null;
+    let currentCat = 'ziyan';      // active filter category: 'ziyan', 'classic-fuji', 'classic-kodak', 'classic-ilford', 'classic-other'
 
     // Initialize filter states
     // Built-in presets (with preset field) are always "loaded" — instant GPU render
@@ -2085,13 +2112,59 @@
       }
     }
 
+    function renderCategoryTabs() {
+      var bar = document.getElementById('cat-bar');
+      if (!bar) return;
+      // Determine which sub-categories have filters
+      var cats = [];
+      FILTERS.forEach(function(f){ if (cats.indexOf(f.cat) < 0) cats.push(f.cat); });
+      customFilters.forEach(function(f){ if (cats.indexOf(f.cat) < 0) cats.push(f.cat); });
+
+      var html = '';
+      // Main category buttons
+      html += '<button class="cat-tab' + (currentCat === 'ziyan' || currentCat.startsWith('ziyan') ? ' active' : '') + '" data-cat="ziyan">自研 · 柯达 5207</button>';
+      html += '<button class="cat-tab' + (currentCat.startsWith('classic') ? ' active' : '') + '" data-cat="classic-fuji">经典款</button>';
+      html += '<button class="cat-tab' + (currentCat === 'more' ? ' active' : '') + '" data-cat="more">➕ 更多</button>';
+
+      // Add sub-tabs for classic if active
+      if (currentCat.startsWith('classic')) {
+        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-fuji' ? ' active' : '') + '" data-cat="classic-fuji" style="font-size:0.62rem;border-style:dashed;">富士</button>';
+        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-kodak' ? ' active' : '') + '" data-cat="classic-kodak" style="font-size:0.62rem;border-style:dashed;">柯达</button>';
+        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-ilford' ? ' active' : '') + '" data-cat="classic-ilford" style="font-size:0.62rem;border-style:dashed;">伊尔福</button>';
+        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-other' ? ' active' : '') + '" data-cat="classic-other" style="font-size:0.62rem;border-style:dashed;">其他</button>';
+      }
+      bar.innerHTML = html;
+
+      // Add click handlers
+      bar.querySelectorAll('.cat-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          currentCat = this.dataset.cat;
+          renderCategoryTabs();
+          renderFilterCards();
+        });
+      });
+    }
+
     function renderFilterCards() {
-      const strip = els.filterStrip;
+      var strip = els.filterStrip;
       strip.innerHTML = '';
 
-      const allFilters = [...FILTERS, ...customFilters];
+      // Filter by active category
+      var allFilters = [];
+      FILTERS.forEach(function(f) {
+        if (currentCat === 'more') return; // more tab -> only custom + film library
+        if (f.cat === currentCat || f.cat === null || !f.cat) allFilters.push(f);
+      });
+      // For "more" tab, show all custom filters
+      if (currentCat === 'more') {
+        customFilters.forEach(function(f) { allFilters.push(f); });
+      } else {
+        customFilters.forEach(function(f) {
+          if (f.cat === currentCat || !f.cat) allFilters.push(f);
+        });
+      }
 
-      allFilters.forEach((f, i) => {
+      allFilters.forEach(function(f, i) {
         const state = filterStates[f.id] || { loaded: false, error: false, thumbDataUrl: null };
         const card = document.createElement('div');
         card.className = 'filter-card';
@@ -2435,7 +2508,7 @@
         var f = FILM_LIBRARY[idx]; if (!f) return;
         var fid = 'lib-' + idx;
         if (customFilters.some(function(cf) { return cf.id === fid; })) return;
-        var pf = { id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: 7 + idx, params: f.params };
+        var pf = { id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: 7 + idx, params: f.params, cat: 'classic-other' };
         customFilters.push(pf);
         filterStates[fid] = { loaded: true, error: false, thumbDataUrl: null };
       });
@@ -2827,6 +2900,7 @@
       try { initThumbGL(); } catch(e) {}
       clearCanvas();
       renderFilterCards();
+      renderCategoryTabs();
     }
 
     // PWA manifest only — no Service Worker
