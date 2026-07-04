@@ -2808,88 +2808,16 @@
 
     // ===================== PWA REGISTRATION =====================
     function registerPWA() {
-      // Service workers require HTTPS or localhost — skip on file://
-      const isFileProtocol = location.protocol === 'file:';
-      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-
-      // Always inject manifest (works anywhere)
-      const manifest = {
-        name: '胶片模拟 Lab',
-        short_name: '胶片Lab',
-        description: '用数字的方式，感受银盐的温度',
-        start_url: location.href.split('?')[0].split('#')[0],
-        display: 'standalone',
-        background_color: '#1e1812',
-        theme_color: '#1e1812',
-        orientation: 'any',
-        icons: [
-          {
-            src: 'data:image/svg+xml,' + encodeURIComponent(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">' +
-              '<rect width="192" height="192" rx="32" fill="#1e1812"/>' +
-              '<rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/>' +
-              '<circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/>' +
-              '<circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/>' +
-              '<rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/>' +
-              '<text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text>' +
-              '</svg>'
-            ),
-            sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          }
-        ]
+      // Manifest only – NO Service Worker to avoid stale caching
+      var m = {
+        name:'胶片模拟 Lab',short_name:'胶片Lab',description:'用数字的方式，感受银盐的温度',
+        start_url:location.href.split('?')[0].split('#')[0],display:'standalone',
+        background_color:'#1e1812',theme_color:'#1e1812',orientation:'any',
+        icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="#1e1812"/><rect x="28" y="40" width="136" height="108" rx="12" fill="none" stroke="#c4956a" stroke-width="6"/><circle cx="96" cy="94" r="30" fill="none" stroke="#c4956a" stroke-width="5"/><circle cx="96" cy="94" r="14" fill="none" stroke="#c4956a" stroke-width="3" opacity="0.6"/><rect x="56" y="158" width="80" height="8" rx="4" fill="#c4956a" opacity="0.3"/><text x="96" y="178" text-anchor="middle" fill="#c4956a" font-family="serif" font-size="12" opacity="0.5">FILM LAB</text></svg>'),sizes:'192x192',type:'image/svg+xml',purpose:'any'}]
       };
-
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const manifestUrl = URL.createObjectURL(manifestBlob);
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = manifestUrl;
-      document.head.appendChild(link);
-
-      // Service worker only for HTTP(S) origins
-      if (isFileProtocol) {
-        console.log('📁 file:// mode — PWA install not available, all other features work');
-        return;
-      }
-
-      // On localhost: only register if user manually opens via http://
-      if (!('serviceWorker' in navigator)) return;
-
-      const swCode = `
-        const CACHE = 'film-lab-v2';
-        self.addEventListener('install', (e) => {
-          e.waitUntil(
-            caches.open(CACHE).then(cache => cache.add(self.location.href).catch(() => {}))
-          );
-          self.skipWaiting();
-        });
-        self.addEventListener('activate', (e) => {
-          e.waitUntil(self.clients.claim());
-        });
-        self.addEventListener('fetch', (e) => {
-          if (e.request.method !== 'GET') return;
-          e.respondWith(
-            caches.match(e.request).then(cached => {
-              const fetched = fetch(e.request).then(resp => {
-                if (resp.ok) {
-                  caches.open(CACHE).then(cache => cache.put(e.request, resp.clone()));
-                }
-                return resp;
-              }).catch(() => cached);
-              return cached || fetched;
-            })
-          );
-        });
-      `;
-
-      const swBlob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(swBlob);
-
-      navigator.serviceWorker.register(swUrl, { scope: '/' })
-        .then(() => console.log('PWA registered'))
-        .catch((e) => console.log('SW register skipped:', e.message));
+      var b=new Blob([JSON.stringify(m)],{type:'application/json'});
+      var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
+      document.head.appendChild(l);
     }
 
     // ===================== INIT =====================
