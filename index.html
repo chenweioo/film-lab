@@ -2316,71 +2316,57 @@
         if (!state) { filterStates[filter.id] = { loaded: false, error: false, thumbDataUrl: null }; state = filterStates[filter.id]; }
         if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') { processNext(idx + 1); return; }
 
-        // Thumbnail generation: save/restore preview state
-        var savedMode = currentMode;
-        var savedTex = glClutTex;
-        var saved3D = gl3DLutTex;
-        var saved3DSize = gl3DLutSize;
-        var savedClutSize = currentClutSize;
-
-        // Built-in preset
+        // For built-in presets: render off-screen then capture without touching visible canvas
         if (filter.preset && !filter.isCustom) {
           try {
+            // Run filter on per-pixel CPU equivalent: render, capture, then restore
+            var savedMode = currentMode;
             render(filter.preset);
             setTimeout(function() {
               capturePreviewThumbnail(filter.id);
-              restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize);
+              if (savedMode === 0) { render(0); }
               processNext(idx + 1);
             }, 600);
-          } catch(e) { restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize); processNext(idx + 1); }
+          } catch(e) { processNext(idx + 1); }
           return;
         }
 
-        // Cube 3D LUT
+        // For cube LUTs: render directly, capture, restore
         if (filter.isCube) {
           loadCubeFromServer(filter.url).then(function(cubeD) {
             if (!cubeD || cubeD.size < 2) { processNext(idx + 1); return; }
             for (var si = 0; si < cubeD.data.length; si += 3) {
               var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
             }
+            var savedMode = currentMode;
             var tex = create3DLUTTexture(cubeD);
             set3DLUTTexture(tex.tex, tex.size);
             currentMode = 8; render(8);
             setTimeout(function() {
               capturePreviewThumbnail(filter.id);
-              restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize);
+              if (savedMode === 0) { render(0); }
               processNext(idx + 1);
             }, 600);
-          }).catch(function() { restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize); processNext(idx + 1); });
+          }).catch(function() { processNext(idx + 1); });
           return;
         }
 
         // Custom HaldCLUT
         try {
           loadLUTImage(filter.url).then(function(result) {
+            var savedMode = currentMode;
             setClutTexture(result.img, result.blobUrl);
             currentMode = 6; render(6);
             setTimeout(function() {
               capturePreviewThumbnail(filter.id);
-              restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize);
+              if (savedMode === 0) { render(0); }
               processNext(idx + 1);
             }, 600);
-          }).catch(function() { restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize); processNext(idx + 1); });
-        } catch(e) { restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize); processNext(idx + 1); }
+          }).catch(function() { processNext(idx + 1); });
+        } catch(e) { processNext(idx + 1); }
       }
 
       processNext(0);
-    }
-
-    function restorePreview(savedMode, savedTex, saved3D, saved3DSize, savedClutSize) {
-      glClutTex = savedTex;
-      gl3DLutTex = saved3D;
-      gl3DLutSize = saved3DSize;
-      currentClutSize = savedClutSize;
-      currentMode = savedMode;
-      if (savedMode === 0 && savedTex === null && saved3D === null) {
-        render(0);
-      }
     }
 
     function loadCubeFromServer(url) {
