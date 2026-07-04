@@ -2172,12 +2172,7 @@
         strip.appendChild(card);
       }
 
-      // "+" card to open film library modal
-      var addCard = document.createElement('div');
-      addCard.className = 'filter-card add-card';
-      addCard.innerHTML = '<span class=\"add-icon\">+</span><span class=\"add-label\">更多<br>滤镜</span>';
-      addCard.addEventListener('click', openLUTModal);
-      strip.appendChild(addCard);
+      // FILM_LIBRARY presets are auto-loaded at boot — no + button needed
     }
 
     // ===================== CORE ACTIONS =====================
@@ -2821,6 +2816,19 @@
     try { initWebGL(); } catch(e) {}
     try { initThumbGL(); } catch(e) {}
     try { clearCanvas(); } catch(e) {}
+
+    // Auto-load FILM_LIBRARY into customFilters (no manual addition needed)
+    for (var flIdx = 0; flIdx < FILM_LIBRARY.length; flIdx++) {
+      var fl = FILM_LIBRARY[flIdx];
+      var flId = 'lib-' + flIdx;
+      var flCat = fl.cat || 'classic-polaroid';
+      customFilters.push({
+        id: flId, name: fl.name, url: 'lib://' + flIdx, isCustom: true,
+        preset: 7 + flIdx, params: fl.params, cat: flCat
+      });
+      filterStates[flId] = { loaded: true, error: false, thumbDataUrl: null };
+    }
+
     try { renderFilterCards(); } catch(e) {}
     try { renderCategoryTabs(); } catch(e) {}
 
@@ -2831,8 +2839,14 @@
     setTimeout(function() {
       try {
         openDB().then(function() { return dbGetCustomFilters(); }).then(function(sc) {
-          customFilters = (sc||[]).map(function(cf) { return {id:cf.id,name:cf.name,url:cf.url,isCustom:true}; });
-          customFilters.forEach(function(cf) { filterStates[cf.id] = {loaded:false,error:false,thumbDataUrl:null}; });
+          // Merge DB custom filters (avoid duplicating FILM_LIBRARY already loaded)
+          var dbFilters = (sc||[]).filter(function(cf) { return !cf.url || cf.url.indexOf('lib://') !== 0; });
+          dbFilters.forEach(function(cf) {
+            if (!customFilters.some(function(x) { return x.id === cf.id; })) {
+              customFilters.push({id:cf.id,name:cf.name,url:cf.url,isCustom:true,cat:cf.cat||'classic-polaroid'});
+              filterStates[cf.id] = {loaded:false,error:false,thumbDataUrl:null};
+            }
+          });
         }).catch(function(){});
       } catch(e) {}
     }, 500);
