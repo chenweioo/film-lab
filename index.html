@@ -1046,7 +1046,7 @@
       { key:'classic-fuji',    label:'经典款 · 富士' },
       { key:'classic-kodak',   label:'经典款 · 柯达' },
       { key:'classic-ilford',  label:'经典款 · 伊尔福' },
-      { key:'classic-other',   label:'经典款 · 其他' }
+      { key:'classic-polaroid',label:'经典款 · 拍立得' }
     ];
 
     const FILTERS = [
@@ -1077,35 +1077,35 @@
 
     // Film Library — all GPU shader presets, zero download, instant
     var FILM_LIBRARY = [
-      { name:'富士 Astia 100F',   params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
-      { name:'富士 Fortia SP',    params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
-      { name:'富士 Classic Chrome',params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
-      { name:'富士 Pro Neg Hi',   params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
-      { name:'富士 Pro Neg Std',  params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
-      { name:'富士 Pro 400H',     params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
-      { name:'富士 Superia 100',  params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
-      { name:'富士 Superia 400',  params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
-      { name:'富士 Superia 800',  params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
-      { name:'富士 Superia 1600', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
-      { name:'柯达 Portra 160 VC',params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
-      { name:'柯达 Portra 400 NC',params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
-      { name:'柯达 Gold 100',     params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
-      { name:'柯达 Gold 200',     params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
-      { name:'柯达 T-Max 100',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
-      { name:'柯达 T-Max 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
-      { name:'柯达 Tri-X 400',    params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
-      { name:'伊尔福 Delta 100',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
-      { name:'伊尔福 Delta 400',   params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
-      { name:'伊尔福 Delta 3200',  params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
-      { name:'伊尔福 FP4 Plus 125',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
-      { name:'伊尔福 Pan F Plus 50',params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
-      { name:'宝丽来 Polachrome',  params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
-      { name:'富士 FP-100C',       params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
-      { name:'富士 FP-3000B',      params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
-      { name:'拍立得 600',         params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
-      { name:'拍立得 669',         params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
-      { name:'拍立得 690',         params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
-      { name:'富士 Instax Mini',   params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] }
+      { name:'富士 Astia 100F',   cat:'classic-fuji', params:[1.03,1.02,1.04, 0.01,0.0,-0.01, 1.0,1.0,1.0, 0.95,0.95, 0, 0,0] },
+      { name:'富士 Fortia SP',    cat:'classic-fuji', params:[1.28,1.32,1.25, -0.04,-0.03,-0.04, 1.04,1.04,1.04, 1.60,1.18, 0, 0.01,0] },
+      { name:'富士 Classic Chrome',cat:'classic-fuji', params:[1.10,1.10,1.08, -0.02,-0.02,-0.01, 1.0,1.0,1.0, 0.70,1.20, 0, -0.02,-0.02] },
+      { name:'富士 Pro Neg Hi',   cat:'classic-fuji', params:[1.0,1.01,0.99, 0.0,0.0,0.0, 0.98,0.98,0.99, 1.0,0.95, 0, 0.01,0] },
+      { name:'富士 Pro Neg Std',  cat:'classic-fuji', params:[0.95,0.95,0.93, 0.02,0.02,0.03, 0.96,0.96,0.97, 0.95,0.85, 0, 0.01,0] },
+      { name:'富士 Pro 400H',     cat:'classic-fuji', params:[0.93,0.95,0.94, 0.03,0.02,0.04, 0.94,0.94,0.94, 0.82,0.82, 0, 0.01,-0.02] },
+      { name:'富士 Superia 100',  cat:'classic-fuji', params:[1.05,1.05,1.04, -0.01,-0.01,-0.01, 1.0,1.0,1.0, 1.12,1.0, 0, 0.0,-0.01] },
+      { name:'富士 Superia 400',  cat:'classic-fuji', params:[1.08,1.08,1.06, -0.02,-0.02,-0.01, 1.01,1.0,1.0, 1.18,1.05, 0, 0.02,0] },
+      { name:'富士 Superia 800',  cat:'classic-fuji', params:[1.12,1.12,1.10, -0.03,-0.03,-0.02, 1.02,1.01,1.01, 1.22,1.10, 0, 0.03,0] },
+      { name:'富士 Superia 1600', cat:'classic-fuji', params:[1.18,1.16,1.14, -0.04,-0.04,-0.03, 1.04,1.03,1.03, 0.90,1.22, 0, 0.04,0] },
+      { name:'柯达 Portra 160 VC',cat:'classic-kodak', params:[1.0,1.0,0.97, 0.01,0.0,0.02, 1.0,1.0,1.0, 1.10,0.92, 0, 0.02,0] },
+      { name:'柯达 Portra 400 NC',cat:'classic-kodak', params:[0.90,0.90,0.88, 0.04,0.03,0.06, 0.92,0.92,0.94, 0.80,0.85, 0, 0.03,0] },
+      { name:'柯达 Gold 100',     cat:'classic-kodak', params:[1.05,1.04,1.02, -0.01,0.0,0.0, 1.0,1.0,1.0, 1.12,1.02, 0, 0.03,0] },
+      { name:'柯达 Gold 200',     cat:'classic-kodak', params:[1.08,1.06,1.04, -0.02,-0.01,-0.01, 1.0,1.0,1.0, 1.18,1.06, 0, 0.03,0] },
+      { name:'柯达 T-Max 100',    cat:'classic-kodak', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.6, 0,0] },
+      { name:'柯达 T-Max 400',    cat:'classic-kodak', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0.9, 0,0] },
+      { name:'柯达 Tri-X 400',    cat:'classic-kodak', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.38, 1.4, 0,0] },
+      { name:'伊尔福 Delta 100',   cat:'classic-ilford', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.18, 0, 0,0] },
+      { name:'伊尔福 Delta 400',   cat:'classic-ilford', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.28, 0.3, 0,0] },
+      { name:'伊尔福 Delta 3200',  cat:'classic-ilford', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.48, 1.6, 0,0] },
+      { name:'伊尔福 FP4 Plus 125',cat:'classic-ilford', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.22, 0.2, 0,0] },
+      { name:'伊尔福 Pan F Plus 50',cat:'classic-ilford', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.32, 0, 0,0] },
+      { name:'宝丽来 Polachrome',  cat:'classic-polaroid', params:[0.88,0.86,0.88, 0.05,0.06,0.05, 0.90,0.90,0.92, 0.58,0.75, 0, 0.04,0] },
+      { name:'富士 FP-100C',       cat:'classic-fuji', params:[0.90,0.88,0.90, 0.04,0.04,0.05, 0.92,0.92,0.93, 0.78,0.80, 0, 0.04,0] },
+      { name:'富士 FP-3000B',      cat:'classic-fuji', params:[1.0,1.0,1.0, 0,0,0, 1.0,1.0,1.0, 0,1.42, 1.8, 0,0] },
+      { name:'拍立得 600',         cat:'classic-polaroid', params:[0.90,0.88,0.90, 0.04,0.05,0.05, 0.93,0.93,0.94, 0.72,0.78, 0, 0.05,0] },
+      { name:'拍立得 669',         cat:'classic-polaroid', params:[0.88,0.86,0.90, 0.04,0.04,0.04, 0.91,0.91,0.93, 0.68,0.76, 0, 0.02,-0.01] },
+      { name:'拍立得 690',         cat:'classic-polaroid', params:[0.94,0.92,0.95, 0.03,0.03,0.03, 0.94,0.94,0.95, 0.85,0.83, 0, 0.03,0] },
+      { name:'富士 Instax Mini',   cat:'classic-fuji', params:[1.0,0.98,1.0, 0.02,0.03,0.02, 0.96,0.96,0.97, 0.90,0.85, 0, 0.01,0] }
     ];
 
     const MAX_IMAGE_DIM = 4096;
@@ -2106,14 +2106,14 @@
       }
     }
 
-    var CATEGORY_ORDER = ['ziyan','classic-fuji','classic-kodak','classic-ilford','classic-other'];
+    var CATEGORY_ORDER = ['ziyan','classic-fuji','classic-kodak','classic-ilford','classic-polaroid'];
     function renderCategoryTabs() {
       var bar = document.getElementById('cat-bar');
       if (!bar) return;
       var html = '';
       for (var i = 0; i < CATEGORY_ORDER.length; i++) {
         var key = CATEGORY_ORDER[i];
-        var label = key === 'ziyan' ? '自研 · 柯达 5207' : (key === 'classic-fuji' ? '经典款 · 富士' : (key === 'classic-kodak' ? '经典款 · 柯达' : (key === 'classic-ilford' ? '经典款 · 伊尔福' : '经典款 · 其他')));
+        var label = key === 'ziyan' ? '自研 · 柯达 5207' : (key === 'classic-fuji' ? '经典款 · 富士' : (key === 'classic-kodak' ? '经典款 · 柯达' : (key === 'classic-ilford' ? '经典款 · 伊尔福' : '经典款 · 拍立得')));
         html += '<button class="cat-tab' + (currentCat === key ? ' active' : '') + '" data-cat="' + key + '">' + label + '</button>';
       }
       bar.innerHTML = html;
@@ -2466,7 +2466,7 @@
         var f = FILM_LIBRARY[idx]; if (!f) return;
         var fid = 'lib-' + idx;
         if (customFilters.some(function(cf) { return cf.id === fid; })) return;
-        var pf = { id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: 7 + idx, params: f.params, cat: 'classic-other' };
+        var pf = { id: fid, name: f.name, url: 'lib://' + idx, isCustom: true, preset: 7 + idx, params: f.params, cat: f.cat || 'classic-polaroid' };
         customFilters.push(pf);
         filterStates[fid] = { loaded: true, error: false, thumbDataUrl: null };
       });
