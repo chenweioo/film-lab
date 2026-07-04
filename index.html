@@ -2357,63 +2357,49 @@
 
     function generateAllThumbnails() {
       if (!sourceImage) return;
-
       var allFilters = [].concat(FILTERS, customFilters);
-
-      function processOne(idx) {
-        if (idx >= allFilters.length) {
-          render(0);
-          renderFilterCards();
-          return;
-        }
+      function step(idx) {
+        if (idx >= allFilters.length) { render(0); renderFilterCards(); return; }
         var f = allFilters[idx];
         var state = filterStates[f.id];
         if (!state) { filterStates[f.id] = { loaded: false, error: false, thumbDataUrl: null }; state = filterStates[f.id]; }
-        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') { processOne(idx + 1); return; }
+        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') { step(idx + 1); return; }
 
-        // Built-in preset: GL render→drawArrays→capture→render(0) in one microtask
+        // Built-in preset: render+capture+restore synchronously
         if (f.preset && !f.isCustom) {
-          try {
-            render(f.preset);
-            capturePreviewThumbnail(f.id);
-            render(0);
-          } catch(e) {}
-          processOne(idx + 1);
+          try { render(f.preset); capturePreviewThumbnail(f.id); render(0); } catch(e) {}
+          setTimeout(function() { step(idx + 1); }, 10);
           return;
         }
-
-        // Cube 3D LUT: download asynchronously but don't block
+        // Cube 3D LUT
         if (f.isCube) {
-          loadCubeFromServer(f.url).then(function(cubeD) {
-            if (!cubeD || cubeD.size < 2) return;
-            for (var si = 0; si < cubeD.data.length; si += 3) {
-              var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
-            }
-            var tex = create3DLUTTexture(cubeD);
-            set3DLUTTexture(tex.tex, tex.size);
-            currentMode = 8; render(8);
-            capturePreviewThumbnail(f.id);
-            render(0);
+          var cu = f.url;
+          if (cu.indexOf('raw.githubusercontent.com') > -1) {
+            cu = cu.replace(/@[a-f0-9]+\/presets/, '@07caebd/presets');
+          }
+          loadCubeFromServer(cu).then(function(cd) {
+            if (!cd || cd.size < 2) return;
+            for (var si = 0; si < cd.data.length; si += 3) { var t = cd.data[si]; cd.data[si] = cd.data[si+2]; cd.data[si+2] = t; }
+            var tex = create3DLUTTexture(cd); set3DLUTTexture(tex.tex, tex.size);
+            var saved = currentMode; currentMode = 8; render(8);
+            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
             renderFilterCards();
           }).catch(function(){});
-          processOne(idx + 1);
+          setTimeout(function() { step(idx + 1); }, 10);
           return;
         }
-
         // Custom HaldCLUT
         try {
           loadLUTImage(f.url).then(function(result) {
             setClutTexture(result.img, result.blobUrl);
-            currentMode = 6; render(6);
-            capturePreviewThumbnail(f.id);
-            render(0);
+            var saved = currentMode; currentMode = 6; render(6);
+            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
             renderFilterCards();
           }).catch(function(){});
         } catch(e) {}
-        processOne(idx + 1);
+        setTimeout(function() { step(idx + 1); }, 10);
       }
-
-      processOne(0);
+      step(0);
     }
 
     function loadCubeFromServer(url) {
