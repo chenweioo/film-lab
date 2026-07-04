@@ -2328,8 +2328,6 @@
       processNext(0);
     }
 
-    let savedBlob = null;
-
     function loadCubeFromServer(url) {
       return fetch(url + '?v=1', { cache: 'no-store' }).then(function(resp) {
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -2645,16 +2643,7 @@
     });
 
     els.saveBtn.addEventListener('click', saveImage);
-
-    // Save overlay: close & share
     els.saveCloseBtn.addEventListener('click', closeSaveOverlay);
-    els.saveShareBtn.addEventListener('click', shareSavedImage);
-    els.saveOverlay.addEventListener('click', (e) => {
-      // Close if user clicks the dark background (not the dialog)
-      if (e.target === els.saveOverlay || e.target.classList.contains('save-overlay-bg')) {
-        closeSaveOverlay();
-      }
-    });
 
     // Compare: long-press / click to toggle
     let compareActive = false;
