@@ -2112,37 +2112,25 @@
       }
     }
 
+    var CATEGORY_ORDER = ['ziyan','classic-fuji','classic-kodak','classic-ilford','classic-other'];
     function renderCategoryTabs() {
       var bar = document.getElementById('cat-bar');
       if (!bar) return;
-      // Determine which sub-categories have filters
-      var cats = [];
-      FILTERS.forEach(function(f){ if (cats.indexOf(f.cat) < 0) cats.push(f.cat); });
-      customFilters.forEach(function(f){ if (cats.indexOf(f.cat) < 0) cats.push(f.cat); });
-
       var html = '';
-      // Main category buttons
-      html += '<button class="cat-tab' + (currentCat === 'ziyan' || currentCat.startsWith('ziyan') ? ' active' : '') + '" data-cat="ziyan">自研 · 柯达 5207</button>';
-      html += '<button class="cat-tab' + (currentCat.startsWith('classic') ? ' active' : '') + '" data-cat="classic-fuji">经典款</button>';
-      html += '<button class="cat-tab' + (currentCat === 'more' ? ' active' : '') + '" data-cat="more">➕ 更多</button>';
-
-      // Add sub-tabs for classic if active
-      if (currentCat.startsWith('classic')) {
-        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-fuji' ? ' active' : '') + '" data-cat="classic-fuji" style="font-size:0.62rem;border-style:dashed;">富士</button>';
-        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-kodak' ? ' active' : '') + '" data-cat="classic-kodak" style="font-size:0.62rem;border-style:dashed;">柯达</button>';
-        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-ilford' ? ' active' : '') + '" data-cat="classic-ilford" style="font-size:0.62rem;border-style:dashed;">伊尔福</button>';
-        html += '<button class="cat-tab cat-sub' + (currentCat === 'classic-other' ? ' active' : '') + '" data-cat="classic-other" style="font-size:0.62rem;border-style:dashed;">其他</button>';
+      for (var i = 0; i < CATEGORY_ORDER.length; i++) {
+        var key = CATEGORY_ORDER[i];
+        var label = key === 'ziyan' ? '自研 · 柯达 5207' : (key === 'classic-fuji' ? '经典款 · 富士' : (key === 'classic-kodak' ? '经典款 · 柯达' : (key === 'classic-ilford' ? '经典款 · 伊尔福' : '经典款 · 其他')));
+        html += '<button class="cat-tab' + (currentCat === key ? ' active' : '') + '" data-cat="' + key + '">' + label + '</button>';
       }
       bar.innerHTML = html;
-
-      // Add click handlers
-      bar.querySelectorAll('.cat-tab').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          currentCat = this.dataset.cat;
-          renderCategoryTabs();
-          renderFilterCards();
-        });
-      });
+      var tabs = bar.querySelectorAll('.cat-tab');
+      for (var j = 0; j < tabs.length; j++) {
+        (function(t) {
+          t.addEventListener('click', function() { currentCat = this.dataset.cat; renderCategoryTabs(); renderFilterCards(); });
+        })(tabs[j]);
+      }
+      var active = bar.querySelector('.cat-tab.active');
+      if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
     function renderFilterCards() {
@@ -2151,51 +2139,44 @@
 
       // Filter by active category
       var allFilters = [];
-      FILTERS.forEach(function(f) {
-        if (currentCat === 'more') return; // more tab -> only custom + film library
-        if (f.cat === currentCat || f.cat === null || !f.cat) allFilters.push(f);
-      });
-      // For "more" tab, show all custom filters
-      if (currentCat === 'more') {
-        customFilters.forEach(function(f) { allFilters.push(f); });
-      } else {
-        customFilters.forEach(function(f) {
-          if (f.cat === currentCat || !f.cat) allFilters.push(f);
-        });
+      for (var i = 0; i < FILTERS.length; i++) {
+        if (FILTERS[i].cat === currentCat || !FILTERS[i].cat) allFilters.push(FILTERS[i]);
+      }
+      // Also include film library filters added under current category
+      for (var j = 0; j < customFilters.length; j++) {
+        if (customFilters[j].cat === currentCat || !customFilters[j].cat) allFilters.push(customFilters[j]);
       }
 
-      allFilters.forEach(function(f, i) {
+      for (var idx = 0; idx < allFilters.length; idx++) {
+        var f = allFilters[idx];
         const state = filterStates[f.id] || { loaded: false, error: false, thumbDataUrl: null };
-        const card = document.createElement('div');
+        var card = document.createElement('div');
         card.className = 'filter-card';
         card.setAttribute('data-filter', f.id);
         if (state.error) card.classList.add('error');
         if (f.id === currentFilterId) card.classList.add('active');
 
-        const thumbContent = (state.thumbDataUrl && state.thumbDataUrl !== 'preset')
-          ? `<img src="${state.thumbDataUrl}" alt="">`
-          : `<div class="thumb-placeholder">🎞</div>`;
+        var tc = (state.thumbDataUrl && state.thumbDataUrl !== 'preset')
+          ? '<img src="' + state.thumbDataUrl + '" alt="">'
+          : '<div class="thumb-placeholder">🎞</div>';
 
-        card.innerHTML = `
-          <div class="filter-thumb">${thumbContent}</div>
-          <span class="filter-name">${f.name}</span>
-          <span class="filter-retry">加载失败<br>点击重试</span>
-        `;
+        card.innerHTML = '<div class="filter-thumb">' + tc + '</div><span class="filter-name">' + f.name + '</span><span class="filter-retry">加载失败<br>点击重试</span>';
 
-        card.addEventListener('click', () => {
-          if (card.classList.contains('error')) {
-            // Retry
-            const fs = filterStates[f.id];
-            if (fs) { fs.error = false; fs.loaded = false; }
-            updateFilterCardUI(f.id);
-            selectFilter(f);
-          } else {
-            selectFilter(f);
-          }
-        });
+        (function(crd, flt) {
+          crd.addEventListener('click', function() {
+            if (crd.classList.contains('error')) {
+              var fs2 = filterStates[flt.id];
+              if (fs2) { fs2.error = false; fs2.loaded = false; }
+              updateFilterCardUI(flt.id);
+              selectFilter(flt);
+            } else {
+              selectFilter(flt);
+            }
+          });
+        })(card, f);
 
         strip.appendChild(card);
-      });
+      }
 
       // Add "+" card
       const addCard = document.createElement('div');
@@ -2326,19 +2307,10 @@
       els.compareBtn.classList.add('visible');
       els.saveBar.classList.add('visible');
 
-      // If a filter was previously selected, re-apply it
-      if (currentFilterId && currentMode !== 0) {
-        render(currentMode);
-      } else {
-        render(0);
-        // Auto-load first filter
-        if (FILTERS.length > 0) {
-          selectFilter(FILTERS[0]);
-        }
-      }
-
+      // Render raw photo (no filter auto-selected)
+      render(0);
       // Generate all filter thumbnails in background (delayed for smooth UX)
-      setTimeout(() => generateAllThumbnails(), 300);
+      setTimeout(function() { generateAllThumbnails(); }, 300);
     }
 
     function generateAllThumbnails() {
