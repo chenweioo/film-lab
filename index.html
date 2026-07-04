@@ -2259,50 +2259,64 @@
       setTimeout(() => generateAllThumbnails(), 300);
     }
 
-    async function generateAllThumbnails() {
+    function generateAllThumbnails() {
       if (!sourceImage) return;
 
-      const allFilters = [...FILTERS, ...customFilters];
+      var allFilters = [].concat(FILTERS, customFilters);
 
-      for (const filter of allFilters) {
-        const state = filterStates[filter.id];
-        if (!state || !state.loaded) continue;
-        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') continue;
+      function processNext(idx) {
+        if (idx >= allFilters.length) { renderFilterCards(); return; }
+        var filter = allFilters[idx];
+        var state = filterStates[filter.id];
+        if (!state) { filterStates[filter.id] = { loaded: false, error: false, thumbDataUrl: null }; state = filterStates[filter.id]; }
+        if (state.thumbDataUrl && state.thumbDataUrl !== 'preset') { processNext(idx + 1); return; }
 
-        // Built-in preset: render GPU filter into main canvas and capture
+        // Built-in preset: render GPU filter and capture
         if (filter.preset && !filter.isCustom) {
           try {
-            const savedMode = currentMode;
+            var saved = currentMode;
             render(filter.preset);
-            // Brief pause for GPU to flush
-            await new Promise(r => setTimeout(r, 60));
-            capturePreviewThumbnail(filter.id);
-            // Restore previous render
-            if (savedMode !== filter.preset) {
-              render(savedMode);
-            }
-          } catch (e) {
-            state.thumbDataUrl = null; // fallback to placeholder
-          }
-          continue;
+            setTimeout(function() {
+              capturePreviewThumbnail(filter.id);
+              if (saved !== filter.preset && saved !== 0) render(saved);
+              processNext(idx + 1);
+            }, 600);
+          } catch(e) { processNext(idx + 1); }
+          return;
         }
 
-        // Custom filter with external CLUT: use thumbnail WebGL context
-        try {
-          if (!thumbGL && !initThumbGL()) continue;
-          const result = await loadLUTImage(filter.url);
-          const thumb = renderThumbnail(sourceImage, result.img, result.img.naturalWidth);
-          if (thumb) {
-            state.thumbDataUrl = thumb;
-            updateFilterCardUI(filter.id);
-          }
-          if (result.blobUrl) URL.revokeObjectURL(result.blobUrl);
-        } catch (e) {
-          // Thumbnail generation is best-effort
+        // Cube 3D LUT: download + parse + BGR swap + upload + render + capture
+        if (filter.isCube) {
+          loadCubeFromServer(filter.url).then(function(cubeD) {
+            if (!cubeD || cubeD.size < 2) { processNext(idx + 1); return; }
+            for (var si = 0; si < cubeD.data.length; si += 3) {
+              var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
+            }
+            var tex = create3DLUTTexture(cubeD);
+            set3DLUTTexture(tex.tex, tex.size);
+            currentMode = 8; render(8);
+            setTimeout(function() {
+              capturePreviewThumbnail(filter.id);
+              processNext(idx + 1);
+            }, 600);
+          }).catch(function() { processNext(idx + 1); });
+          return;
         }
+
+        // Custom HaldCLUT
+        try {
+          loadLUTImage(filter.url).then(function(result) {
+            setClutTexture(result.img, result.blobUrl);
+            currentMode = 6; render(6);
+            setTimeout(function() {
+              capturePreviewThumbnail(filter.id);
+              processNext(idx + 1);
+            }, 600);
+          }).catch(function() { processNext(idx + 1); });
+        } catch(e) { processNext(idx + 1); }
       }
 
-      renderFilterCards();
+      processNext(0);
     }
 
     let savedBlob = null;
