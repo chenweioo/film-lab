@@ -2332,93 +2332,45 @@
       });
     }
 
-    async function saveImage() {
-      if (!glSourceTex) {
-        showToast('请先选择照片');
-        return;
-      }
-
-      try {
-        // 1. Render current filter to canvas
-        render(currentMode);
-        await new Promise(r => setTimeout(r, 150));
-
-        // 2. Extract from WebGL canvas
-        const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
-        if (!dataUrl || dataUrl === 'data:,') {
-          showToast('导出失败，请重试');
-          return;
-        }
-
-        // 3. Show in full-screen overlay — user long-presses to save
-        els.saveResultImg.src = dataUrl;
-        els.saveOverlay.classList.add('open');
-
-        // 4. Prepare blob for share button
-        try {
-          const resp = await fetch(dataUrl);
-          savedBlob = await resp.blob();
-        } catch (e) {
-          savedBlob = null;
-        }
-
+    function saveImage() {
+      if (!glSourceTex || !sourceImage) { showToast('请先选择照片'); return; }
+      showToast('正在导出原图品质…');
+      var origW = els.glCanvas.width, origH = els.glCanvas.height;
+      var srcW = sourceImage.naturalWidth, srcH = sourceImage.naturalHeight;
+      var outW, outH, MAX_L = 4096;
+      if (srcW >= srcH) { outW = Math.min(srcW, MAX_L); outH = Math.round(outW * srcH / srcW); }
+      else { outH = Math.min(srcH, MAX_L); outW = Math.round(outH * srcW / srcH); }
+      els.glCanvas.width = outW; els.glCanvas.height = outH;
+      gl.viewport(0, 0, outW, outH);
+      glQuadVerts[0] = -1; glQuadVerts[1] = -1; glQuadVerts[2] = 1; glQuadVerts[3] = -1;
+      glQuadVerts[4] = -1; glQuadVerts[5] =  1; glQuadVerts[6] = 1; glQuadVerts[7] =  1;
+      render(currentMode);
+      setTimeout(function() {
+        var dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.98);
+        var blob = dataURLtoBlob(dataUrl);
+        els.saveResultImg.src = dataUrl; els.saveOverlay.classList.add('open');
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'film-sim-' + Date.now() + '.jpg';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        els.glCanvas.width = origW; els.glCanvas.height = origH;
+        gl.viewport(0, 0, origW, origH);
+        updateQuadVerts(srcW, srcH); render(currentMode);
+        showToast('已保存 ' + (blob.size / 1024 / 1024).toFixed(1) + 'MB');
         track('save', getCurrentFilterName());
-
-      } catch (e) {
-        console.error('Save error:', e);
-        showToast('保存失败，请重试');
-      }
+      }, 500);
     }
 
-    function closeSaveOverlay() {
-      els.saveOverlay.classList.remove('open');
-      // Don't revoke — dataUrl is managed by browser
-      savedBlob = null;
+    function dataURLtoBlob(dataurl) {
+      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+      var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+      return new Blob([u8arr], { type: mime });
     }
 
-    async function shareSavedImage() {
-      if (!savedBlob || savedBlob.size < 100) {
-        // Re-grab from canvas
-        try {
-          const dataUrl = els.glCanvas.toDataURL('image/jpeg', 0.92);
-          const resp = await fetch(dataUrl);
-          savedBlob = await resp.blob();
-        } catch (e) {
-          showToast('分享失败，请长按图片保存');
-          return;
-        }
-      }
-
-      const filename = 'film-sim-' + Date.now() + '.jpg';
-      const file = new File([savedBlob], filename, { type: 'image/jpeg' });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file] });
-          showToast('已分享');
-          return;
-        } catch (e) {
-          // User cancelled — fall through
-          if (e.name !== 'AbortError') {
-            console.warn('Share error:', e);
-          }
-        }
-      }
-
-      // Fallback for Android: trigger download link
-      const url = URL.createObjectURL(savedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('图片已下载');
-    }
+    function closeSaveOverlay() { els.saveOverlay.classList.remove('open'); }
 
     function getCurrentFilterName() {
-      return [...FILTERS, ...customFilters].find(f => f.id === currentFilterId)?.name || '';
+      return [].concat(FILTERS, customFilters).find(function(f){return f.id === currentFilterId;})?.name || '';
     }
 
     function triggerDownload(url) {
