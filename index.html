@@ -2172,7 +2172,12 @@
         strip.appendChild(card);
       }
 
-      // No "+" card — all filters live under category tabs now
+      // "+" card to open film library modal
+      var addCard = document.createElement('div');
+      addCard.className = 'filter-card add-card';
+      addCard.innerHTML = '<span class=\"add-icon\">+</span><span class=\"add-label\">更多<br>滤镜</span>';
+      addCard.addEventListener('click', openLUTModal);
+      strip.appendChild(addCard);
     }
 
     // ===================== CORE ACTIONS =====================
