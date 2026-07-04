@@ -923,6 +923,8 @@
 
       <!-- Category Tab Bar -->
       <div id="cat-bar" class="cat-bar"></div>
+      <!-- Status -->
+      <div id="diag" style="font-size:0.55rem;color:#c4956a;padding:2px 4px;min-height:14px;text-align:center;"></div>
 
       <!-- Filter strip -->
       <p class="section-label">胶片滤镜 / Film Filters</p>
@@ -2344,6 +2346,7 @@
 
       // Render raw photo (no filter auto-selected)
       render(0);
+      diag('ready');
 
       // Clear all previous thumbnails so new ones are generated for new photo
       var allF = [].concat(FILTERS, customFilters);
@@ -2354,7 +2357,12 @@
       renderFilterCards();
 
       // Generate thumbnails ONLY for currently visible category (lazy)
-      setTimeout(function() { generateVisibleThumbnails(); }, 400);
+      setTimeout(function() { diag('gen:'+currentCat); generateVisibleThumbnails(); }, 400);
+    }
+
+    function diag(msg) {
+      var d = document.getElementById('diag');
+      if (d) d.textContent = msg;
     }
 
     function generateVisibleThumbnails() {
@@ -2863,7 +2871,7 @@
     // ===================== DIRECT BOOT =====================
     // Synchronous start — safari-test.html architecture
     resizeCanvas();
-    try { initWebGL(); } catch(e) {}
+    try { initWebGL(); diag('GL ok'); } catch(e) { diag('GL fail'); }
     try { initThumbGL(); } catch(e) {}
     try { clearCanvas(); } catch(e) {}
 
