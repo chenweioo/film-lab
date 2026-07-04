@@ -2822,14 +2822,13 @@
 
     // ===================== INIT =====================
     // ===================== DIRECT BOOT =====================
-    // Synchronous start — like safari-test.html which works on all devices
+    // Synchronous start — safari-test.html architecture
     resizeCanvas();
-    if (initWebGL()) {
-      try { initThumbGL(); } catch(e) {}
-      clearCanvas();
-      renderFilterCards();
-      renderCategoryTabs();
-    }
+    initWebGL(); // returns false if WebGL unsupported
+    try { initThumbGL(); } catch(e) {}
+    clearCanvas();
+    renderFilterCards();
+    renderCategoryTabs();
 
     // PWA manifest only — no Service Worker
     try { registerPWA(); } catch(e) {}
