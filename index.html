@@ -2824,11 +2824,11 @@
     // ===================== DIRECT BOOT =====================
     // Synchronous start — safari-test.html architecture
     resizeCanvas();
-    initWebGL(); // returns false if WebGL unsupported
+    try { initWebGL(); } catch(e) {}
     try { initThumbGL(); } catch(e) {}
-    clearCanvas();
-    renderFilterCards();
-    renderCategoryTabs();
+    try { clearCanvas(); } catch(e) {}
+    try { renderFilterCards(); } catch(e) {}
+    try { renderCategoryTabs(); } catch(e) { console.error('tabs error:', e); }
 
     // PWA manifest only — no Service Worker
     try { registerPWA(); } catch(e) {}
