@@ -2295,7 +2295,14 @@
 
       // Render raw photo (no filter auto-selected)
       render(0);
-      // Generate all filter thumbnails in background (delayed for smooth UX)
+      // Clear all previous thumbnails so new ones are generated for new photo
+      var allF = [].concat(FILTERS, customFilters);
+      for (var afi = 0; afi < allF.length; afi++) {
+        var afs = filterStates[allF[afi].id];
+        if (afs) { afs.thumbDataUrl = allF[afi].preset && !allF[afi].isCustom ? 'preset' : null; }
+      }
+      renderFilterCards();
+      // Generate all filter thumbnails in background
       setTimeout(function() { generateAllThumbnails(); }, 300);
     }
 
