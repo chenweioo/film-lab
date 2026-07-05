@@ -55,7 +55,7 @@
       --border: #3a2a18;
       --shadow: 0 4px 24px rgba(0,0,0,0.5);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --nav-height: 52px;
+      --nav-height: 44px;
       --radius: 12px;
       --radius-sm: 8px;
     }
@@ -89,7 +89,7 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding-bottom: 12px;
+      padding-bottom: 4px;
       -webkit-overflow-scrolling: touch;
     }
     .page.active { display: flex; flex-direction: column; }
@@ -117,20 +117,20 @@
 
     /* ========== Home Page ========== */
     #page-home {
-      padding: 6px;
+      padding: 4px 6px;
       gap: 2px;
     }
 
     .home-header {
       text-align: center;
-      padding: 6px 0 2px;
+      padding: 4px 0 0;
     }
     .home-header h1 {
-      margin-bottom: 1px;
-      font-size: 1.6rem;
+      margin-bottom: 0;
+      font-size: 1.5rem;
     }
     .home-header .tagline {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: var(--accent-dim);
       letter-spacing: 0.06em;
     }
@@ -140,7 +140,7 @@
       position: relative;
       width: 100%;
       aspect-ratio: 4/3;
-      max-height: 68vh;
+      max-height: 70vh;
       background: #1a1510;
       border-radius: var(--radius);
       overflow: hidden;
@@ -220,7 +220,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
       padding: 0;
       min-height: 0;
     }
@@ -229,15 +228,15 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 4px 14px;
-      border-radius: 16px;
-      font-size: 0.7rem;
-      letter-spacing: 0.04em;
+      padding: 2px 12px;
+      border-radius: 12px;
+      font-size: 0.66rem;
+      letter-spacing: 0.03em;
       cursor: pointer;
       transition: all 0.15s;
       display: none;
     }
-    #compare-btn.visible { display: inline-flex; align-items: center; gap: 4px; }
+    #compare-btn.visible { display: inline-flex; align-items: center; gap: 3px; }
     #compare-btn:active {
       background: var(--accent);
       color: #1e1812;
@@ -250,13 +249,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       background: var(--accent);
       color: #1e1812;
       border: none;
-      padding: 10px 14px;
-      border-radius: 22px;
-      font-size: 0.82rem;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       cursor: pointer;
@@ -271,14 +270,14 @@
     }
 
     .upload-icon {
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
     }
 
     /* Category Tabs */
-    .cat-bar { display: flex; gap: 4px; overflow-x: auto; padding: 0 2px 1px; flex-shrink: 0; scrollbar-width: none; }
+    .cat-bar { display: flex; gap: 3px; overflow-x: auto; padding: 0 2px; flex-shrink: 0; scrollbar-width: none; }
     .cat-bar::-webkit-scrollbar { display: none; }
-    .cat-tab { flex: 0 0 auto; padding: 3px 9px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text-muted); font-size: 0.64rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s; }
+    .cat-tab { flex: 0 0 auto; padding: 2px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); font-size: 0.62rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.02em; transition: all 0.15s; }
     .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
     .cat-tab:active { transform: scale(0.96); }
     .cat-sub { display: none; }
@@ -286,11 +285,11 @@
 
     #filter-strip {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      padding: 0 4px 2px;
+      padding: 0 4px 0;
       flex-shrink: 0;
       scrollbar-width: none;
     }
@@ -423,7 +422,7 @@
     /* Action button row — upload + save side by side */
     #action-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
       padding: 0;
     }
@@ -433,13 +432,13 @@
       display: none;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       background: #3a2a18;
       color: var(--accent);
-      padding: 10px 14px;
-      border-radius: 22px;
+      padding: 8px 12px;
+      border-radius: 20px;
       border: 1px solid var(--accent);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       cursor: pointer;
@@ -833,10 +832,10 @@
     /* ========== Responsive tweaks ========== */
     @media (min-width: 480px) {
       #preview-container {
-        max-height: 64vh;
+        max-height: 66vh;
       }
       .filter-card {
-        flex: 0 0 108px;
+        flex: 0 0 104px;
       }
     }
     @media (min-width: 768px) {
@@ -847,7 +846,7 @@
         border-right: 1px solid var(--border);
       }
       #preview-container {
-        max-height: 55vh;
+        max-height: 58vh;
       }
     }
   </style>
@@ -918,7 +917,7 @@
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
-      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.7 · 3D LUT · LR级色彩</div>
+      <div style="text-align:center;font-size:0.55rem;color:var(--accent);opacity:0.45;padding-top:1px;font-weight:700;">  v2.8</div>
 
     </div>
 
@@ -3029,7 +3028,7 @@
       var _vEl = document.createElement('div');
       _vEl.id = '_ver';
       _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
-      _vEl.textContent = '  v2.7 | 3D LUT | LR级色彩';
+      _vEl.textContent = '  v2.8';
       var _homePage = document.getElementById('page-home');
       if (_homePage) _homePage.appendChild(_vEl);
       document.title = '🎞 胶片模拟 Lab v2.3';
