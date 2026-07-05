@@ -55,7 +55,7 @@
       --border: #3a2a18;
       --shadow: 0 4px 24px rgba(0,0,0,0.5);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --nav-height: 48px;
+      --nav-height: 42px;
       --radius: 12px;
       --radius-sm: 8px;
     }
@@ -117,8 +117,8 @@
 
     /* ========== Home Page ========== */
     #page-home {
-      padding: 8px 10px;
-      gap: 8px;
+      padding: 6px 8px 0;
+      gap: 6px;
     }
 
     .home-header {
@@ -139,14 +139,13 @@
     #preview-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 4/3;
-      max-height: 60vh;
+      flex: 1;
+      min-height: 0;
       background: #1a1510;
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
-      flex-shrink: 0;
     }
 
     #gl-canvas {
