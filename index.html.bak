@@ -139,13 +139,14 @@
     #preview-container {
       position: relative;
       width: 100%;
-      flex: 1;
-      min-height: 0;
+      aspect-ratio: 4/3;
+      max-height: 75vh;
       background: #1a1510;
       border-radius: var(--radius);
       overflow: hidden;
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
     #gl-canvas {
@@ -829,6 +830,11 @@
     }
 
     /* ========== Responsive tweaks ========== */
+    @media (min-width: 480px) {
+      #preview-container {
+        max-height: 72vh;
+      }
+    }
     @media (min-width: 768px) {
       #app {
         max-width: 480px;
@@ -836,10 +842,13 @@
         border-left: 1px solid var(--border);
         border-right: 1px solid var(--border);
       }
+      #preview-container {
+        max-height: 62vh;
+      }
     }
   </style>
 </head>
-<body><div id="_swclr" style="position:fixed;top:0;left:0;z-index:9999;width:100%;padding:8px;background:#ff2244;color:#fff;text-align:center;font:bold 12px system-ui;display:block;">🎞 v2.9 FINAL | 全屏预览 | 确认版本</div>
+<body><div id="_swclr" style="position:fixed;top:0;left:0;z-index:9999;width:100%;padding:10px;background:#c05555;color:#fff;text-align:center;font:14px system-ui;display:none;"></div>
   <div id="app">
     <!-- ====== Home Page ====== -->
     <div id="page-home" class="page active">
@@ -2397,7 +2406,7 @@
             set3DLUTTexture(tex.tex, tex.size);
             if (currentFilterId === filter.id) {
               currentMode = 8; render(8);
-              try { var _m = document.getElementById('_swclr'); if (_m) { _m.textContent = '🎞 v2.9 | 3D LUT | ' + filter.name; } } catch(_e) {}
+              try { var _m = document.getElementById('_swclr'); if (_m) { _m.style.display = 'block'; _m.textContent = 'MODE:8 3D LUT | ' + filter.name; } } catch(_e) {}
             }
           }).catch(function() { /* CDN unreachable → stay on params, good enough preview */ });
         }
