@@ -25,7 +25,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title> 胶片模拟 Lab v2</title>
+  <title> 胶片模拟 Lab v2.1</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e1812">
@@ -248,20 +248,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       background: var(--accent);
       color: #1e1812;
       border: none;
-      padding: 14px 28px;
-      border-radius: 28px;
-      font-size: 1rem;
+      padding: 12px 16px;
+      border-radius: 24px;
+      font-size: 0.85rem;
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       cursor: pointer;
       box-shadow: 0 4px 16px rgba(196,149,106,0.3);
       transition: all 0.2s;
-      flex-shrink: 0;
-      align-self: center;
+      flex: 1;
     }
     #upload-btn:active {
       transform: scale(0.95);
@@ -419,37 +418,37 @@
       letter-spacing: 0.04em;
     }
 
-    /* Save button */
-    /* Save bar */
-    #save-bar {
-      display: none;
-      flex-shrink: 0;
-    }
-    #save-bar.visible {
-      display: block;
-    }
-    #save-btn {
+    /* Action button row — upload + save side by side */
+    #action-row {
       display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 0;
+    }
+
+    /* Save button */
+    #save-btn {
+      display: none;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      width: 100%;
-      background: var(--accent);
-      color: #1e1812;
-      padding: 14px 28px;
-      border-radius: 14px;
-      border: none;
-      font-size: 0.95rem;
+      gap: 6px;
+      background: #3a2a18;
+      color: var(--accent);
+      padding: 12px 16px;
+      border-radius: 24px;
+      border: 1px solid var(--accent);
+      font-size: 0.85rem;
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 4px 18px rgba(196,149,106,0.3);
+      flex: 1;
     }
+    #save-btn.visible { display: flex; }
     #save-btn:active {
-      background: #d4a574;
+      background: var(--accent);
+      color: #1e1812;
       transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(196,149,106,0.2);
     }
 
     /* ========== About Page ========== */
@@ -889,26 +888,24 @@
         </button>
       </div>
 
-      <!-- Upload -->
+      <!-- Upload + Save side by side -->
       <input type="file" id="file-input" accept="image/*" style="display:none">
-      <button id="upload-btn">
-        <svg class="upload-icon" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
-          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity="0.6"/>
-          <path d="M3 16l5-5 3 3 4-4 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        从相册选取照片
-      </button>
-
-      <!-- Save bar — appears after photo selected, between upload and filters -->
-      <div id="save-bar">
+      <div id="action-row">
+        <button id="upload-btn">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity="0.6"/>
+            <path d="M3 16l5-5 3 3 4-4 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          选取照片
+        </button>
         <button id="save-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          保存图片到相册
+          保存图片
         </button>
       </div>
 
@@ -920,7 +917,7 @@
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
-      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.0 · GPU即时渲染 · 纯离线</div>
+      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.1 · GPU即时渲染 · 纯离线</div>
 
     </div>
 
@@ -1096,68 +1093,71 @@
     ];
 
     // Embedded param presets from film-lab.json — instant GPU fallback for cube filters, zero download
+    // All params tuned for the GPU CDL pipeline: slope(exp), offset(lift), power(gamma),
+    // saturation, contrast, grain, tintR(+warm/-cool), tintB(+cool/-warm)
+    // Each category has a distinct visible film character.
     var FILTER_PARAMS_BY_ID = {
-      // 5207 系列 — exact params from film-lab.json
-      'n5207': [0.760,0.508,0.073, 0.053,0.074,0.104, 1.04,0.89,0.42, 1.00,1.00, 0, 0,0],
-      's15207': [0.847,0.614,0.130, 0.000,0.004,0.016, 1.29,0.99,0.49, 1.00,1.00, 0, 0,0],
-      's25207': [0.755,0.572,0.091, 0.005,0.000,0.004, 1.25,0.97,0.63, 1.00,1.00, 0, 0,0],
-      'yplus1': [0.696,0.474,0.049, 0.005,0.010,0.042, 1.53,1.04,0.62, 1.00,1.00, 0, 0,0],
-      'yplus2': [0.711,0.513,0.060, 0.006,0.021,0.046, 2.00,1.26,0.81, 1.00,1.00, 0, 0,0],
-      'yminus1': [0.633,0.318,0.011, 0.054,0.078,0.110, 0.77,0.72,1.01, 1.00,1.00, 0, 0,0],
-      'yminus2': [0.515,0.237,0.016, 0.084,0.125,0.180, 0.57,0.57,2.00, 1.00,1.00, 0, 0,0],
-      'ysS': [0.708,0.384,0.023, 0.017,0.037,0.064, 0.96,0.88,1.35, 1.00,1.00, 0, 0,0],
-      'bplus1': [0.776,0.489,0.063, 0.006,0.034,0.053, 1.28,0.92,0.52, 1.00,1.00, 0, 0,0],
-      'bplus2': [0.752,0.489,0.035, 0.005,0.015,0.032, 1.24,0.95,0.62, 1.00,1.00, 0, 0,0],
-      'bminus1': [0.717,0.399,0.058, 0.015,0.048,0.069, 0.82,0.76,0.55, 1.00,1.00, 0, 0,0],
-      'bminus2': [0.619,0.320,0.032, 0.075,0.134,0.150, 0.73,0.72,0.82, 1.00,1.00, 0, 0,0],
-      'bsS': [0.772,0.474,0.041, 0.006,0.034,0.055, 1.04,0.87,0.83, 1.00,1.00, 0, 0,0],
-      'b2plus1': [0.663,0.457,-0.034, 0.055,0.030,0.047, 1.18,0.93,0.30, 1.00,1.00, 0, 0,0],
-      'b2plus2': [0.666,0.523,-0.044, 0.041,0.024,0.044, 1.35,1.10,0.49, 1.00,1.00, 0, 0,0],
-      'b2minus1': [0.603,0.374,-0.025, 0.067,0.048,0.093, 0.83,0.89,0.30, 1.00,1.00, 0, 0,0],
-      'b2minus2': [0.537,0.307,0.005, 0.088,0.073,0.108, 0.69,0.68,2.00, 1.00,1.00, 0, 0,0],
-      'b2S': [0.623,0.410,0.028, 0.034,0.011,0.035, 0.90,0.98,2.00, 1.00,1.00, 0, 0,0],
-      // 5219 series (Vision3 500T) — tungsten, slightly cool, cinematic
-      '5219n':  [1.03,0.98,0.93, 0.0,0.01,0.03, 1.0,0.98,0.94, 1.05,1.02, 0, 0,0],
-      '5219w':  [1.06,1.0,0.88, -0.01,0.0,0.03, 1.0,1.0,0.92, 1.05,1.02, 0, 0.02,0],
-      '5219c':  [1.0,0.95,0.98, 0.01,0.02,-0.01, 1.0,0.97,1.0, 1.02,1.02, 0, 0,0.02],
-      '5219p1': [0.98,0.95,0.92, 0.02,0.01,0.02, 0.97,0.95,0.94, 0.92,0.95, 0, 0.02,0],
-      '5219p2': [1.0,0.97,0.90, 0.01,0.0,0.02, 0.98,0.96,0.93, 0.90,0.93, 0, 0.03,0],
-      '5219p3': [0.97,0.94,0.93, 0.02,0.02,0.02, 0.96,0.94,0.93, 0.88,0.92, 0, 0.02,-0.01],
-      // G200 series (Gold 200) — warm, golden, progressive intensity
-      'G200-1': [1.04,1.0,0.94, -0.01,0.0,0.02, 1.0,1.0,0.96, 1.12,1.04, 0, 0.02,0],
-      'G200-2': [1.06,1.02,0.92, -0.01,0.0,0.02, 1.0,1.0,0.95, 1.15,1.06, 0, 0.03,0],
-      'G200-3': [1.08,1.03,0.90, -0.02,0.0,0.03, 1.01,1.0,0.94, 1.18,1.08, 0, 0.03,0],
-      'G200-4': [1.10,1.04,0.88, -0.02,0.0,0.03, 1.01,1.0,0.93, 1.20,1.10, 0, 0.04,0],
-      'G200-5': [1.13,1.05,0.86, -0.03,0.0,0.04, 1.02,1.0,0.92, 1.22,1.12, 0, 0.04,0],
-      'G200-6': [1.15,1.06,0.84, -0.03,0.0,0.04, 1.02,1.0,0.91, 1.25,1.14, 0, 0.05,0],
-      // Hgold series — golden warm film
-      'Hgold':   [1.06,1.02,0.95, -0.01,0.0,0.01, 1.01,1.0,0.97, 1.15,1.05, 0, 0.03,0],
-      'Hgoldci': [1.02,1.0,1.0, 0.0,0.01,-0.01, 1.0,1.0,1.0, 1.08,1.03, 0, 0,0.01],
-      'Hgoldwn': [1.08,1.03,0.90, -0.02,0.0,0.02, 1.01,1.0,0.95, 1.18,1.06, 0, 0.04,0],
-      'Hgoldso': [1.03,1.0,0.95, 0.0,0.01,0.02, 0.97,0.96,0.96, 1.05,0.95, 0, 0.02,0],
-      'Hgoldnc': [1.12,1.05,0.88, -0.03,0.0,0.03, 1.03,1.01,0.93, 1.30,1.12, 0, 0.04,0],
-      'Hgoldpk': [1.05,1.0,0.93, -0.01,0.01,0.02, 1.01,0.99,0.96, 1.10,1.03, 0, 0.03,0],
-      // Hasselblad series — natural, high fidelity, slightly desaturated
-      'Hhs':   [1.0,1.0,1.0, 0.0,0.0,0.0, 1.0,1.0,1.0, 0.92,1.02, 0, 0,0],
-      'Hhsci': [1.0,0.98,1.02, 0.0,0.01,-0.01, 1.0,0.99,1.01, 0.90,1.02, 0, 0,0.01],
-      'Hhswn': [1.02,1.0,0.97, -0.01,0.0,0.01, 1.0,1.0,0.99, 0.92,1.02, 0, 0.02,0],
-      'Hhsnc': [1.05,1.02,0.98, -0.01,0.0,0.0, 1.01,1.0,1.0, 1.08,1.06, 0, 0.01,0],
-      'Hhspk': [1.01,0.99,0.98, 0.0,0.0,0.01, 1.0,0.99,0.99, 0.95,1.0, 0, 0.02,0],
-      'Hhscy': [0.98,1.0,1.03, 0.01,0.0,-0.01, 0.99,1.0,1.01, 0.92,1.02, 0, 0,0.02],
-      // XH 5219 series — cross-processed 5219
-      'XH5219B': [1.05,0.95,0.90, -0.01,0.01,0.03, 1.02,0.98,0.92, 1.08,1.05, 0, 0.01,0.01],
-      'XH5219C': [0.95,1.0,1.05, 0.02,0.0,-0.02, 0.98,1.0,1.02, 1.02,1.04, 0, 0,0.02],
-      'XH5219G': [1.0,1.05,0.95, 0.0,-0.01,0.01, 1.0,1.02,0.99, 1.05,1.03, 0, 0,0],
-      'XH5219N': [1.0,1.0,1.0, 0.0,0.0,0.0, 1.0,1.0,1.0, 1.0,1.02, 0, 0,0],
-      'XH5219R': [1.08,0.93,0.88, -0.02,0.02,0.04, 1.03,0.97,0.91, 1.12,1.06, 0, 0.02,0],
-      'XH5219Y': [1.02,1.04,0.88, -0.01,-0.01,0.03, 1.0,1.01,0.93, 1.10,1.04, 0, 0.03,0],
-      // XH G200 series — cross-processed G200, progressive
-      'XHG2001': [1.03,1.0,0.95, -0.01,0.0,0.01, 1.0,1.0,0.98, 1.08,1.03, 0, 0.01,0],
-      'XHG2002': [1.05,1.01,0.93, -0.01,0.0,0.02, 1.01,1.0,0.97, 1.12,1.05, 0, 0.02,0],
-      'XHG2003': [1.08,1.02,0.91, -0.02,0.0,0.02, 1.02,1.0,0.96, 1.15,1.07, 0, 0.02,0],
-      'XHG2004': [1.10,1.03,0.89, -0.02,0.0,0.03, 1.02,1.0,0.95, 1.18,1.09, 0, 0.03,0],
-      'XHG2005': [1.12,1.04,0.87, -0.03,0.0,0.03, 1.03,1.0,0.94, 1.22,1.11, 0, 0.03,0],
-      'XHG2006': [1.15,1.05,0.85, -0.03,0.0,0.04, 1.03,1.0,0.93, 1.25,1.13, 0, 0.04,0]
+      // ---- 5207 (Kodak Vision3) — neutral warm, slight punch ----
+      'n5207':   [1.02,1.01,0.99, -0.01,0.0,0.01, 1.02,1.01,0.99, 1.06,1.05, 0, 0.02, -0.01],
+      's15207':  [1.04,1.02,0.97, -0.01,0.0,0.01, 1.03,1.02,0.98, 1.08,1.06, 0, 0.03, -0.02],
+      's25207':  [0.99,1.01,1.03, 0.01,0.0,-0.01, 0.98,1.0,1.02, 1.04,1.04, 0, -0.02, 0.03],
+      'yplus1':  [1.02,0.99,0.95, 0.0,0.01,0.02, 1.03,1.01,0.97, 1.12,1.05, 0, 0.04, -0.02],
+      'yplus2':  [1.04,0.98,0.92, 0.0,0.01,0.03, 1.04,1.01,0.95, 1.18,1.06, 0, 0.06, -0.03],
+      'yminus1': [1.0,1.01,1.04, 0.0,-0.01,0.0, 0.98,1.0,1.03, 1.04,1.04, 0, -0.03, 0.04],
+      'yminus2': [0.98,1.01,1.06, 0.01,-0.01,0.0, 0.97,0.99,1.04, 1.02,1.04, 0, -0.05, 0.06],
+      'ysS':     [1.01,1.0,0.99, 0.0,0.0,0.0, 0.99,0.99,1.0, 0.95,0.97, 0, 0.01, 0.0],
+      'bplus1':  [1.03,1.01,0.97, -0.01,0.01,0.02, 1.02,1.01,0.98, 1.08,1.06, 0, 0.04, -0.02],
+      'bplus2':  [1.05,1.0,0.94, -0.01,0.01,0.03, 1.03,1.02,0.96, 1.14,1.07, 0, 0.06, -0.03],
+      'bminus1': [0.99,1.01,1.03, 0.01,-0.01,0.0, 0.98,1.0,1.02, 1.04,1.05, 0, -0.03, 0.04],
+      'bminus2': [0.97,1.01,1.05, 0.01,-0.01,0.0, 0.97,0.99,1.03, 1.02,1.05, 0, -0.05, 0.06],
+      'bsS':     [1.01,1.0,0.99, 0.0,0.01,0.01, 0.98,0.98,1.0, 0.93,0.97, 0, 0.02, -0.01],
+      'b2plus1': [1.04,1.02,0.95, -0.01,0.01,0.02, 1.03,1.02,0.96, 1.10,1.08, 0, 0.05, -0.03],
+      'b2plus2': [1.06,1.02,0.92, -0.01,0.02,0.03, 1.04,1.02,0.94, 1.16,1.10, 0, 0.07, -0.04],
+      'b2minus1':[0.98,1.01,1.05, 0.01,-0.01,-0.01, 0.97,1.0,1.03, 1.03,1.04, 0, -0.04, 0.05],
+      'b2minus2':[0.96,1.01,1.07, 0.02,-0.02,-0.01, 0.96,0.99,1.04, 1.0,1.04, 0, -0.06, 0.07],
+      'b2S':     [1.01,1.01,0.98, 0.0,0.01,0.01, 0.97,0.98,0.99, 0.92,0.96, 0, 0.02, 0.0],
+      // ---- 5219 (Vision3 500T) — cool tungsten, slightly muted, cinematic ----
+      '5219n':  [1.0,0.99,1.02, 0.01,0.0,-0.01, 0.98,0.99,1.01, 0.95,1.04, 0, -0.02, 0.04],
+      '5219w':  [1.02,1.0,0.97, -0.01,0.0,0.02, 1.0,1.0,0.98, 0.97,1.04, 0, 0.03, -0.02],
+      '5219c':  [0.98,0.99,1.04, 0.02,0.01,-0.01, 0.97,0.98,1.02, 0.93,1.04, 0, -0.04, 0.06],
+      '5219p1': [0.99,1.0,1.0, 0.01,0.01,0.01, 0.98,0.98,0.99, 0.90,0.98, 0, 0.02, 0.0],
+      '5219p2': [1.0,1.01,0.99, 0.01,0.01,0.01, 0.97,0.98,0.99, 0.88,0.97, 0, 0.03, -0.01],
+      '5219p3': [0.98,0.99,1.01, 0.02,0.02,0.0, 0.97,0.97,0.99, 0.86,0.95, 0, 0.01, 0.02],
+      // ---- G200 (Gold 200) — warm golden, progressive saturation ----
+      'G200-1': [1.02,1.0,0.97, -0.01,0.0,0.01, 1.0,1.0,0.98, 1.10,1.03, 0, 0.03, -0.02],
+      'G200-2': [1.03,1.0,0.95, -0.01,0.01,0.02, 1.01,1.0,0.97, 1.14,1.04, 0, 0.04, -0.02],
+      'G200-3': [1.04,1.0,0.93, -0.02,0.01,0.02, 1.02,1.0,0.96, 1.18,1.06, 0, 0.05, -0.03],
+      'G200-4': [1.05,1.0,0.91, -0.02,0.01,0.03, 1.02,1.0,0.95, 1.22,1.07, 0, 0.06, -0.03],
+      'G200-5': [1.06,1.0,0.89, -0.02,0.01,0.03, 1.03,1.0,0.94, 1.26,1.08, 0, 0.07, -0.04],
+      'G200-6': [1.08,1.0,0.87, -0.03,0.01,0.04, 1.04,1.0,0.93, 1.30,1.10, 0, 0.08, -0.05],
+      // ---- Hgold — golden warm film, varied character ----
+      'Hgold':   [1.03,1.01,0.96, -0.01,0.0,0.01, 1.0,1.0,0.98, 1.14,1.05, 0, 0.04, -0.02],
+      'Hgoldci': [1.0,1.0,1.02, 0.01,0.0,0.0, 0.99,0.99,1.01, 1.06,1.03, 0, -0.01, 0.03],
+      'Hgoldwn': [1.05,1.01,0.93, -0.02,0.0,0.02, 1.01,1.0,0.95, 1.18,1.06, 0, 0.06, -0.03],
+      'Hgoldso': [1.01,1.0,0.98, 0.0,0.01,0.01, 0.98,0.98,0.99, 0.96,0.96, 0, 0.02, -0.01],
+      'Hgoldnc': [1.06,1.01,0.92, -0.02,0.0,0.02, 1.02,1.01,0.94, 1.28,1.10, 0, 0.05, -0.03],
+      'Hgoldpk': [1.02,1.0,0.96, -0.01,0.01,0.02, 1.0,0.99,0.98, 1.08,1.03, 0, 0.04, 0.0],
+      // ---- Hasselblad — natural, clean, slight desaturation ----
+      'Hhs':   [1.01,1.0,1.0, 0.0,0.0,0.0, 1.01,1.0,1.0, 0.92,1.03, 0, 0.0, 0.0],
+      'Hhsci': [1.0,0.99,1.02, 0.0,0.0,-0.01, 1.0,0.99,1.01, 0.90,1.03, 0, -0.01, 0.03],
+      'Hhswn': [1.02,1.0,0.98, -0.01,0.0,0.01, 1.01,1.0,0.99, 0.93,1.03, 0, 0.03, -0.01],
+      'Hhsnc': [1.04,1.01,0.98, -0.01,0.0,0.01, 1.02,1.01,0.99, 1.10,1.07, 0, 0.02, -0.01],
+      'Hhspk': [1.01,0.99,0.99, 0.0,0.01,0.01, 1.0,0.99,1.0, 0.95,1.01, 0, 0.03, 0.0],
+      'Hhscy': [0.99,1.0,1.02, 0.01,0.0,-0.01, 0.99,1.0,1.01, 0.92,1.03, 0, -0.01, 0.03],
+      // ---- XH 5219 — cross-processed 5219, cool teal & orange ----
+      'XH5219B': [1.04,0.98,0.94, -0.01,0.01,0.02, 1.02,0.99,0.95, 1.10,1.06, 0, 0.02, 0.02],
+      'XH5219C': [0.97,1.0,1.04, 0.02,0.0,-0.02, 0.98,1.0,1.02, 1.04,1.06, 0, -0.02, 0.05],
+      'XH5219G': [1.0,1.03,0.98, 0.0,-0.01,0.01, 1.0,1.02,0.99, 1.06,1.04, 0, 0.0, 0.0],
+      'XH5219N': [1.01,1.0,1.0, 0.0,0.0,0.0, 1.0,1.0,1.0, 1.0,1.03, 0, 0.0, 0.0],
+      'XH5219R': [1.06,0.96,0.92, -0.02,0.02,0.03, 1.03,0.98,0.93, 1.14,1.08, 0, 0.04, 0.01],
+      'XH5219Y': [1.02,1.03,0.92, -0.01,-0.01,0.03, 1.0,1.01,0.94, 1.12,1.06, 0, 0.04, -0.02],
+      // ---- XH G200 — cross-processed G200, warm golden progressive ----
+      'XHG2001': [1.02,1.0,0.97, -0.01,0.0,0.01, 1.01,1.0,0.98, 1.08,1.04, 0, 0.02, -0.01],
+      'XHG2002': [1.03,1.0,0.95, -0.01,0.0,0.02, 1.02,1.0,0.97, 1.12,1.05, 0, 0.03, -0.02],
+      'XHG2003': [1.04,1.0,0.93, -0.02,0.0,0.02, 1.02,1.0,0.96, 1.16,1.06, 0, 0.04, -0.02],
+      'XHG2004': [1.05,1.0,0.91, -0.02,0.01,0.03, 1.03,1.0,0.95, 1.20,1.08, 0, 0.05, -0.03],
+      'XHG2005': [1.06,1.0,0.89, -0.02,0.01,0.03, 1.04,1.0,0.94, 1.24,1.09, 0, 0.06, -0.03],
+      'XHG2006': [1.08,1.0,0.87, -0.03,0.01,0.04, 1.04,1.0,0.93, 1.28,1.11, 0, 0.07, -0.04]
     };
     // Attach params to matching FILTERS entries for instant preview + offline fallback
     for (var _fi2 = 0; _fi2 < FILTERS.length; _fi2++) {
@@ -1222,7 +1222,6 @@
       uploadBtn: $('#upload-btn'),
       fileInput: $('#file-input'),
       filterStrip: $('#filter-strip'),
-      saveBar: $('#save-bar'),
       saveBtn: $('#save-btn'),
       bottomNav: $('#bottom-nav'),
       navBtns: $$('.nav-btn'),
@@ -1452,12 +1451,24 @@
 
       // Parameterized preset from uniforms (mode >= 7)
       vec3 applyParamPreset(vec3 c, vec2 uv) {
+        c = ascCDL(c, u_fslope, u_foffset, u_fpower);
+        c = saturate(c, u_fsat);
+        c = contrast(c, u_fcont);
+        // Shadow/highlight tint
+        float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        float sh = smoothstep(0.0, 0.35, 1.0 - lum);
+        float hi = smoothstep(0.55, 1.0, lum);
+        c.r = mix(c.r, c.r + u_ftintR * 0.12, sh);
+        c.b = mix(c.b, c.b + u_ftintB * 0.12, sh);
+        c.r = mix(c.r, c.r + u_ftintR * 0.06, hi);
+        c.b = mix(c.b, c.b + u_ftintB * 0.06, hi);
+        // Film grain (subtle, keeps color)
         if (u_fgrain > 0.01) {
-          float lum = dot(c, vec3(0.30, 0.59, 0.11)); lum = (lum - 0.5) * u_fcont + 0.5;
-          float n = hash(uv * 1024.0 + fract(uv*137.0)) + hash(uv * 2048.0 - fract(uv*79.0)*0.5);
-          n = (n - 0.5) * u_fgrain * 0.07; n *= 1.0 - abs(lum - 0.5) * 1.2;
-          lum = clamp(lum + n, 0.0, 1.0); c = vec3(lum);
-        } else { c = ascCDL(c, u_fslope, u_foffset, u_fpower); c = saturate(c, u_fsat); c = contrast(c, u_fcont); }
+          float n = hash(uv * 1024.0 + fract(uv * 137.0)) + hash(uv * 2048.0 - fract(uv * 79.0) * 0.5);
+          n = (n - 0.5) * u_fgrain * 0.04;
+          n *= 1.0 - abs(lum - 0.5) * 1.5;
+          c = clamp(c + vec3(n), 0.0, 1.0);
+        }
         return clamp(c, 0.0, 1.0);
       }
 
@@ -2407,7 +2418,7 @@
       setSourceTexture(sourceImage);
       els.placeholder.classList.add('hidden');
       els.compareBtn.classList.add('visible');
-      els.saveBar.classList.add('visible');
+      els.saveBtn.classList.add('visible');
 
       // Render raw photo (no filter auto-selected)
       render(0);
@@ -2913,7 +2924,7 @@
         name: '胶片模拟 Lab',
         short_name: '胶片Lab',
         description: '用数字的方式，感受银盐的温度',
-        start_url: baseUrl + '?v=105',
+        start_url: baseUrl + '?v=2.1',
         display: 'standalone',
         background_color: '#1e1812',
         theme_color: '#1e1812',
@@ -2955,10 +2966,10 @@
       var _vEl = document.createElement('div');
       _vEl.id = '_ver';
       _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
-      _vEl.textContent = '  v2.0 | GPU即时渲染 | 纯离线';
+      _vEl.textContent = '  v2.1 | GPU即时渲染 | 纯离线';
       var _homePage = document.getElementById('page-home');
       if (_homePage) _homePage.appendChild(_vEl);
-      document.title = '🎞 胶片模拟 Lab v2';
+      document.title = '🎞 胶片模拟 Lab v2.1';
     } catch(_ignore) {}
 
     resizeCanvas();
