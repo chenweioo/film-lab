@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Film Lab · 数据看板</title>
+  <style>
+    :root {
+      --bg: #1e1812; --bg-card: #2a1f14; --text: #f0e6d3;
+      --text-muted: #a09080; --accent: #c4956a; --accent-dim: #8b6b4a;
+      --border: #3a2a18; --radius: 12px;
+      --ziyan: #c4956a; --ziyan-5219: #6b8fbf; --ziyan-g200: #d4a84b;
+      --ziyan-hgold: #e0b050; --ziyan-hhassel: #a0c0a0;
+      --classic-fuji: #5a8a6a; --classic-kodak: #d4784c;
+      --classic-ilford: #888; --classic-polaroid: #c0a090;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; justify-content: center; padding: 20px 10px 40px;
+    }
+    .dashboard { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 12px; }
+
+    .header { text-align: center; padding: 8px 0; }
+    .header h1 {
+      font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.5rem; font-weight: 400;
+      letter-spacing: 0.06em; color: var(--accent);
+    }
+    .header p { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.05em; }
+
+    /* KPI cards — 2 rows of 3 */
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 6px; text-align: center;
+    }
+    .card .label { font-size: 0.55rem; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 2px; }
+    .card .value { font-size: 1.35rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .card .sub  { font-size: 0.5rem; color: var(--text-muted); margin-top: 1px; }
+
+    /* Section */
+    .section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 10px;
+    }
+    .section h2 { font-size: 0.66rem; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+
+    /* Date bar */
+    .date-bar { display: flex; gap: 4px; align-items: center; margin-bottom: 10px; }
+    .date-bar .preset-btn {
+      padding: 5px 8px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-muted); font-size: 0.6rem;
+      cursor: pointer; letter-spacing: 0.03em; white-space: nowrap; transition: all 0.15s;
+    }
+    .date-bar .preset-btn.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; }
+    .date-bar .preset-btn:active { transform: scale(0.96); }
+    .date-bar input[type=date] {
+      flex: 1; min-width: 0; padding: 4px 4px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 0.6rem;
+      outline: none;
+    }
+    .date-bar input[type=date]:focus { border-color: var(--accent); }
+    .date-bar .sep { font-size: 0.55rem; color: var(--text-muted); flex-shrink: 0; }
+
+    /* Chart — daily trend */
+    .chart-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; padding-bottom: 2px; }
+    .chart-inner { display: flex; align-items: flex-end; gap: 2px; height: 130px; padding-top: 4px; position: relative; }
+    .chart-inner::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--border); }
+    .bar-col { width: var(--bar-w); flex-shrink: 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+    .bar { width: 70%; max-width: 28px; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.82; transition: opacity 0.1s; }
+    .bar:hover { opacity: 1; }
+    .bar-val { font-size: 0.45rem; color: var(--accent); margin-bottom: 1px; min-height: 10px; font-variant-numeric: tabular-nums; text-align: center; }
+    .bar-lbl { font-size: var(--lbl-size); color: var(--text-muted); margin-top: 3px; text-align: center; transform: var(--lbl-transform); max-width: var(--lbl-w); overflow: hidden; white-space: nowrap; }
+
+    /* Category bars */
+    .cat-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .cat-bar-label { width: 80px; flex-shrink: 0; font-size: 0.6rem; color: var(--text); letter-spacing: 0.03em; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cat-bar-track { flex: 1; height: 14px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .cat-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.3s; min-width: 2px; }
+    .cat-bar-count { width: 36px; flex-shrink: 0; font-size: 0.55rem; color: var(--accent); text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Top filter list */
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.72rem; letter-spacing: 0.03em; }
+    .row:last-child { border-bottom: none; }
+    .row .name { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row .cat-tag { display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 0.5rem; margin-left: 5px; background: var(--bg); color: var(--text-muted); letter-spacing: 0.03em; vertical-align: middle; }
+    .row .count { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; flex-shrink: 0; }
+    .rank { display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; border-radius: 50%; font-size: 0.52rem; font-weight: 700; margin-right: 4px; vertical-align: middle; }
+    .r1 { background: #f5a623; color: #1e1812; }
+    .r2 { background: #a0a0a0; color: #1e1812; }
+    .r3 { background: #cd7f32; color: #1e1812; }
+    .rn { background: var(--bg); color: var(--text-muted); }
+
+    .refresh-bar { display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.04em; }
+    .refresh-bar button { background: var(--accent-dim); color: #fff; border: none; padding: 6px 14px; border-radius: 14px; font-size: 0.68rem; cursor: pointer; letter-spacing: 0.04em; transition: all 0.15s; }
+    .refresh-bar button:active { transform: scale(0.96); opacity: 0.8; }
+    .empty { text-align: center; color: var(--text-muted); padding: 16px; font-size: 0.75rem; letter-spacing: 0.04em; }
+    .footer { text-align: center; font-size: 0.55rem; color: var(--text-muted); opacity: 0.35; letter-spacing: 0.03em; margin-top: 4px; }
+
+    @media (max-width: 400px) {
+      .card .value { font-size: 1.15rem; }
+      .cat-bar-label { width: 64px; font-size: 0.55rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <h1>Film Lab</h1>
+      <p>数据看板 · 实时统计</p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">总事件</div><div class="value" id="k-total">-</div></div>
+      <div class="card"><div class="label">应用滤镜</div><div class="value" id="k-apply">-</div><div class="sub" id="k-cube" style="color:var(--accent-dim)"></div></div>
+      <div class="card"><div class="label">保存图片</div><div class="value" id="k-save">-</div></div>
+      <div class="card"><div class="label">自研系列</div><div class="value" id="k-ziyan">-</div><div class="sub">42 个滤镜</div></div>
+      <div class="card"><div class="label">经典系列</div><div class="value" id="k-classic">-</div><div class="sub">30 个预设</div></div>
+      <div class="card"><div class="label">活跃天数</div><div class="value" id="k-days">-</div></div>
+    </div>
+
+    <!-- Category distribution -->
+    <div class="section">
+      <h2>📂 分类使用分布</h2>
+      <div id="cat-dist">加载中…</div>
+    </div>
+
+    <!-- Daily trend -->
+    <div class="section">
+      <h2>📈 每日点击趋势</h2>
+      <div class="date-bar">
+        <button class="preset-btn active" id="btn7" data-days="7">近7天</button>
+        <button class="preset-btn" id="btn30" data-days="30">近30天</button>
+        <button class="preset-btn" id="btn90" data-days="90">近90天</button>
+        <input type="date" id="ds" title="起始">
+        <span class="sep">—</span>
+        <input type="date" id="de" title="结束">
+        <button class="preset-btn" id="btn-custom">确定</button>
+      </div>
+      <div class="chart-outer">
+        <div class="chart-inner" id="chart">加载中…</div>
+      </div>
+    </div>
+
+    <!-- Top filters -->
+    <div class="section">
+      <h2>🔥 热门滤镜 TOP 10</h2>
+      <div id="top10">加载中…</div>
+    </div>
+
+    <div class="refresh-bar">
+      <span id="updated"></span>
+      <button onclick="fetchStats()">刷新</button>
+    </div>
+    <div class="footer">film-lab · chenweioo.github.io/film-lab</div>
+  </div>
+
+  <script>
+    // === Category definitions matching current app ===
+    var CATS = [
+      {key:'ziyan',        label:'自研 · 柯达 5207', color:'#c4956a'},
+      {key:'ziyan-5219',   label:'自研 · 5219',      color:'#6b8fbf'},
+      {key:'ziyan-G200',   label:'自研 · G200',      color:'#d4a84b'},
+      {key:'ziyan-Hgold',  label:'自研 · Hgold',     color:'#e0b050'},
+      {key:'ziyan-Hhassel',label:'自研 · 哈苏',      color:'#a0c0a0'},
+      {key:'classic-fuji', label:'经典款 · 富士',    color:'#5a8a6a'},
+      {key:'classic-kodak',label:'经典款 · 柯达',    color:'#d4784c'},
+      {key:'classic-ilford',label:'经典款 · 伊尔福', color:'#999'},
+      {key:'classic-polaroid',label:'经典款 · 拍立得',color:'#c0a090'}
+    ];
+    var catMap = {};
+    CATS.forEach(function(c){ catMap[c.key] = c; });
+
+    function getCatLabel(k) {
+      if (k.indexOf('ziyan')===0) {
+        if (k.indexOf('ziyan-5219')===0) return '自研 · 5219';
+        if (k.indexOf('ziyan-G200')===0) return '自研 · G200';
+        if (k.indexOf('ziyan-Hgold')===0) return '自研 · Hgold';
+        if (k.indexOf('ziyan-Hhassel')===0) return '自研 · 哈苏';
+        return '自研 · 柯达 5207';
+      }
+      if (k.indexOf('classic-fuji')===0) return '经典款 · 富士';
+      if (k.indexOf('classic-kodak')===0) return '经典款 · 柯达';
+      if (k.indexOf('classic-ilford')===0) return '经典款 · 伊尔福';
+      if (k.indexOf('classic-polaroid')===0) return '经典款 · 拍立得';
+      if (k.indexOf('lib-')===0) return '胶片库';
+      return '其他';
+    }
+
+    var API = '/api/stats';
+    var currentDays = 7;
+    var customStart = null, customEnd = null;
+
+    document.getElementById('btn7').addEventListener('click', function(){ setPreset(7, this); });
+    document.getElementById('btn30').addEventListener('click', function(){ setPreset(30, this); });
+    document.getElementById('btn90').addEventListener('click', function(){ setPreset(90, this); });
+    document.getElementById('btn-custom').addEventListener('click', function(){
+      var s = document.getElementById('ds').value;
+      var e = document.getElementById('de').value;
+      if (!s || !e) return;
+      document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+      customStart = s; customEnd = e; currentDays = 7;
+      fetchStats();
+    });
+
+    function setPreset(d, btn) {
+      document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentDays = d; customStart = null; customEnd = null;
+      var now = new Date();
+      document.getElementById('de').value = now.toISOString().slice(0,10);
+      now.setDate(now.getDate() - (d - 1));
+      document.getElementById('ds').value = now.toISOString().slice(0,10);
+      fetchStats();
+    }
+
+    // Init dates
+    (function(){
+      var now = new Date();
+      document.getElementById('de').value = now.toISOString().slice(0,10);
+      now.setDate(now.getDate() - 6);
+      document.getElementById('ds').value = now.toISOString().slice(0,10);
+    })();
+
+    function setEl(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+    function setHtml(id, h) { var el = document.getElementById(id); if (el) el.innerHTML = h; }
+
+    async function fetchStats() {
+      try {
+        var resp = await fetch(API);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var s = await resp.json();
+        if (!s || s.total === 0) { showEmpty(); return; }
+
+        // KPIs
+        setEl('k-total', (s.total||0).toLocaleString());
+        setEl('k-apply', (s.byAction?.apply||0).toLocaleString());
+        setEl('k-save', (s.byAction?.save||0).toLocaleString());
+        setEl('k-days', Object.keys(s.byDate||{}).length);
+
+        // Separate ziyan vs classic categories from byFilter
+        var ziyanCount = 0, classicCount = 0;
+        var byFilter = s.byFilter || {};
+        Object.keys(byFilter).forEach(function(f){
+          var cat = getCatLabel(f);
+          if (cat.indexOf('自研')===0) ziyanCount += byFilter[f];
+          else if (cat.indexOf('经典')===0 || cat.indexOf('胶片库')===0 || cat.indexOf('伊尔福')>=0) classicCount += byFilter[f];
+        });
+        setEl('k-ziyan', ziyanCount.toLocaleString());
+        setEl('k-classic', classicCount.toLocaleString());
+
+        // Cube attempts (mode 8 3D LUT)
+        var cubeCount = Object.keys(byFilter).filter(function(f){
+          return f.indexOf('5207')>=0||f.indexOf('5219')>=0||f.indexOf('G200')>=0||f.indexOf('Hgold')>=0||f.indexOf('哈苏')>=0;
+        }).reduce(function(a,f){return a+(byFilter[f]||0);},0);
+        setEl('k-cube', cubeCount > 0 ? '含 3D LUT ' + cubeCount.toLocaleString() + ' 次' : '');
+
+        // Category distribution
+        var catAgg = {};
+        Object.keys(byFilter).forEach(function(f){
+          if (!f || f === 'none' || f === 'unknown') return;
+          var cat = getCatLabel(f);
+          catAgg[cat] = (catAgg[cat]||0) + byFilter[f];
+        });
+        var catEntries = Object.entries(catAgg).sort(function(a,b){return b[1]-a[1];});
+        var catMax = catEntries.length ? catEntries[0][1] : 1;
+        var catColors = {
+          '自研 · 柯达 5207':'#c4956a','自研 · 5219':'#6b8fbf','自研 · G200':'#d4a84b',
+          '自研 · Hgold':'#e0b050','自研 · 哈苏':'#a0c0a0',
+          '经典款 · 富士':'#5a8a6a','经典款 · 柯达':'#d4784c','经典款 · 伊尔福':'#999','经典款 · 拍立得':'#c0a090',
+          '胶片库':'#b0a090','其他':'#666'
+        };
+        setHtml('cat-dist', catEntries.length
+          ? catEntries.map(function(e){
+              var pct = Math.round(e[1]/catMax*100);
+              var col = catColors[e[0]] || '#c4956a';
+              return '<div class="cat-bar-row"><span class="cat-bar-label">'+e[0]+'</span><div class="cat-bar-track"><div class="cat-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span class="cat-bar-count">'+e[1].toLocaleString()+'</span></div>';
+            }).join('')
+          : '<div class="empty">暂无分类数据</div>');
+
+        // Daily chart
+        drawDailyChart(s);
+
+        // Top filters
+        var topF = Object.entries(byFilter)
+          .filter(function(e){ return e[0] && e[0] !== 'none' && e[0] !== 'unknown'; })
+          .sort(function(a,b){ return b[1]-a[1]; })
+          .slice(0, 10);
+        var rankCls = ['r1','r2','r3'];
+        setHtml('top10', topF.length
+          ? topF.map(function(e,i){
+              var rk = i<3 ? rankCls[i] : 'rn';
+              var cat = getCatLabel(e[0]);
+              return '<div class="row"><span class="name"><span class="rank '+rk+'">'+(i+1)+'</span>'+e[0]+'<span class="cat-tag">'+cat+'</span></span><span class="count">'+e[1]+'</span></div>';
+            }).join('')
+          : '<div class="empty">暂无数据</div>');
+
+        setEl('updated','更新于 ' + new Date().toLocaleTimeString('zh-CN'));
+      } catch(e) {
+        console.error(e);
+        setEl('updated','加载失败 · ' + (e.message||''));
+      }
+    }
+
+    function showEmpty() {
+      ['k-total','k-apply','k-save','k-ziyan','k-classic','k-days'].forEach(function(id){setEl(id,'0');});
+      setHtml('cat-dist','<div class="empty">暂无数据</div>');
+      setHtml('chart','<span class="empty" style="width:100%">暂无数据</span>');
+      setHtml('top10','<div class="empty">暂无数据</div>');
+      setEl('updated','数据为空');
+    }
+
+    function drawDailyChart(s) {
+      var container = document.getElementById('chart');
+      if (!container) return;
+
+      var sd, ed;
+      if (customStart && customEnd) {
+        sd = new Date(customStart+'T00:00:00');
+        ed = new Date(customEnd+'T23:59:59');
+        if (isNaN(sd) || isNaN(ed)) return;
+        if (ed < sd) { var t = sd; sd = ed; ed = t; }
+      } else {
+        sd = new Date(); sd.setDate(sd.getDate()-(currentDays-1)); sd.setHours(0,0,0,0);
+        ed = new Date(); ed.setHours(23,59,59,999);
+      }
+      var days = [];
+      var cursor = new Date(sd);
+      while (cursor <= ed) { days.push(cursor.toISOString().slice(0,10)); cursor.setDate(cursor.getDate()+1); }
+      var byDate = s.byDate || {};
+      var values = days.map(function(d){return byDate[d]||0;});
+      var N = days.length;
+      var maxV = Math.max.apply(null, values.concat([1]));
+
+      var barW, lblSize, lblTransform, lblMaxW, showEvery=1;
+      if (N<=7) { barW=38; lblSize='0.48rem'; lblTransform='none'; lblMaxW='44px'; }
+      else if (N<=14) { barW=26; lblSize='0.44rem'; lblTransform='none'; lblMaxW='30px'; }
+      else if (N<=30) { barW=20; lblSize='0.38rem'; lblTransform='rotate(-40deg)'; lblMaxW='24px'; showEvery=N>20?2:1; }
+      else { barW=10; lblSize='0.34rem'; lblTransform='rotate(-55deg)'; lblMaxW='16px'; showEvery=Math.ceil(N/30); }
+
+      container.innerHTML = days.map(function(d,i){
+        var val = values[i];
+        var hPct = Math.max((val/maxV)*100, val>0?3:0);
+        var show = (i%showEvery===0)||(i===N-1);
+        var lbl = show ? d.slice(5) : '';
+        var valTxt = (N<=30||val>0) ? (val>0?val:'') : (val>0?val:'');
+        return '<div class="bar-col" style="--bar-w:'+barW+'px"><div class="bar-val">'+valTxt+'</div><div class="bar" style="height:'+hPct+'%" title="'+d+': '+val+'"></div><div class="bar-lbl" style="--lbl-size:'+lblSize+';--lbl-transform:'+lblTransform+';--lbl-w:'+lblMaxW+'">'+lbl+'</div></div>';
+      }).join('');
+
+      requestAnimationFrame(function(){
+        var outer = document.querySelector('.chart-outer');
+        if (outer && N>14) outer.scrollLeft = outer.scrollWidth;
+      });
+    }
+
+    fetchStats();
+    setInterval(fetchStats, 60000);
+  </script>
+</body>
+</html>
