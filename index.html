@@ -918,7 +918,7 @@
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
-      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.6 · 紧凑布局</div>
+      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.7 · 3D LUT · LR级色彩</div>
 
     </div>
 
@@ -2388,17 +2388,32 @@
 
       if (!sourceImage) { return; }
 
-      // .cube 3D LUT — pure GPU params (mode 7), CDN upgrade disabled for debugging
+      // .cube 3D LUT — params preview (mode 7) + CDN fetch → accurate 3D LUT (mode 8)
       if (filter.isCube) {
+        // Step 1: instant GPU params preview while cube downloads
         var _cp = filter.params;
         if (!_cp) { _cp = [1,1,1, 0,0,0, 1,1,1, 1,1, 0, 0,0]; filter.params = _cp; }
         currentMode = 7; currentFilter = filter;
         render(7);
         updateFilterCardUI(filter.id);
-        // Show mode indicator in debug bar
-        try { var _db = document.getElementById('_swclr'); if (_db) { _db.style.display = 'block'; _db.textContent = 'MODE:7 | ' + filter.name + ' | ' + filter.cat; } } catch(_e) {}
         setTimeout(function() { capturePreviewThumbnail(filter.id); }, 600);
         track('apply', filter.name);
+        // Step 2: background CDN fetch → full 33³ 3D LUT (matches Lightroom/DaVinci)
+        if (filter.url) {
+          loadCubeFromServer(filter.url).then(function(cubeD) {
+            if (!cubeD || cubeD.size < 2) return;
+            // DaVinci .cube files are BGR — swap to RGB for GPU
+            for (var si = 0; si < cubeD.data.length; si += 3) {
+              var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
+            }
+            var tex = create3DLUTTexture(cubeD);
+            set3DLUTTexture(tex.tex, tex.size);
+            if (currentFilterId === filter.id) {
+              currentMode = 8; render(8);
+              try { var _m = document.getElementById('_swclr'); if (_m) { _m.style.display = 'block'; _m.textContent = 'MODE:8 3D LUT | ' + filter.name; } } catch(_e) {}
+            }
+          }).catch(function() { /* CDN unreachable → stay on params, good enough preview */ });
+        }
         return;
       }
 
@@ -3014,7 +3029,7 @@
       var _vEl = document.createElement('div');
       _vEl.id = '_ver';
       _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
-      _vEl.textContent = '  v2.6 | 紧凑布局';
+      _vEl.textContent = '  v2.7 | 3D LUT | LR级色彩';
       var _homePage = document.getElementById('page-home');
       if (_homePage) _homePage.appendChild(_vEl);
       document.title = '🎞 胶片模拟 Lab v2.3';
