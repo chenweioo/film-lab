@@ -55,7 +55,7 @@
       --border: #3a2a18;
       --shadow: 0 4px 24px rgba(0,0,0,0.5);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --nav-height: 44px;
+      --nav-height: 40px;
       --radius: 12px;
       --radius-sm: 8px;
     }
@@ -89,7 +89,7 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding-bottom: 4px;
+      padding-bottom: 0;
       -webkit-overflow-scrolling: touch;
     }
     .page.active { display: flex; flex-direction: column; }
@@ -117,22 +117,22 @@
 
     /* ========== Home Page ========== */
     #page-home {
-      padding: 4px 6px;
-      gap: 2px;
+      padding: 2px 6px;
+      gap: 1px;
     }
 
     .home-header {
       text-align: center;
-      padding: 4px 0 0;
+      padding: 2px 0 0;
     }
     .home-header h1 {
       margin-bottom: 0;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
     }
     .home-header .tagline {
-      font-size: 0.68rem;
+      font-size: 0.64rem;
       color: var(--accent-dim);
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
     }
 
     /* Preview Area */
@@ -140,7 +140,7 @@
       position: relative;
       width: 100%;
       aspect-ratio: 4/3;
-      max-height: 70vh;
+      max-height: 75vh;
       background: #1a1510;
       border-radius: var(--radius);
       overflow: hidden;
@@ -228,9 +228,9 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 2px 12px;
-      border-radius: 12px;
-      font-size: 0.66rem;
+      padding: 1px 10px;
+      border-radius: 10px;
+      font-size: 0.62rem;
       letter-spacing: 0.03em;
       cursor: pointer;
       transition: all 0.15s;
@@ -422,7 +422,7 @@
     /* Action button row — upload + save side by side */
     #action-row {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       flex-shrink: 0;
       padding: 0;
     }
@@ -832,10 +832,7 @@
     /* ========== Responsive tweaks ========== */
     @media (min-width: 480px) {
       #preview-container {
-        max-height: 66vh;
-      }
-      .filter-card {
-        flex: 0 0 104px;
+        max-height: 72vh;
       }
     }
     @media (min-width: 768px) {
@@ -846,7 +843,7 @@
         border-right: 1px solid var(--border);
       }
       #preview-container {
-        max-height: 58vh;
+        max-height: 62vh;
       }
     }
   </style>
@@ -917,7 +914,7 @@
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
-      <div style="text-align:center;font-size:0.55rem;color:var(--accent);opacity:0.45;padding-top:1px;font-weight:700;">  v2.8</div>
+      <div style="text-align:center;font-size:0.6rem;color:var(--accent);opacity:0.7;padding-top:1px;font-weight:700;">  v2.9</div>
 
     </div>
 
@@ -3028,7 +3025,7 @@
       var _vEl = document.createElement('div');
       _vEl.id = '_ver';
       _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
-      _vEl.textContent = '  v2.8';
+      _vEl.textContent = '  v2.9';
       var _homePage = document.getElementById('page-home');
       if (_homePage) _homePage.appendChild(_vEl);
       document.title = '🎞 胶片模拟 Lab v2.3';
