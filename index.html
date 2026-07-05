@@ -152,6 +152,7 @@
       width: 100%;
       height: 100%;
       display: block;
+      object-fit: contain;
     }
 
     #preview-placeholder {
@@ -274,10 +275,34 @@
     }
 
     /* Category Tabs */
+    // Category Tabs — two-line: primary / secondary
     .cat-bar { display: flex; gap: 5px; overflow-x: auto; padding: 0 2px 4px; flex-shrink: 0; scrollbar-width: none; }
     .cat-bar::-webkit-scrollbar { display: none; }
-    .cat-tab { flex: 0 0 auto; padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; color: var(--text-muted); font-size: 0.66rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s; }
-    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
+    .cat-tab {
+      flex: 0 0 auto;
+      padding: 6px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 0.62rem;
+      white-space: nowrap;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.3;
+      gap: 1px;
+      min-height: 40px;
+    }
+    .cat-tab .cat-primary { font-size: 0.64rem; font-weight: 500; color: var(--text); }
+    .cat-tab .cat-secondary { font-size: 0.56rem; opacity: 0.7; }
+    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; }
+    .cat-tab.active .cat-primary { color: var(--accent); font-weight: 700; }
+    .cat-tab.active .cat-secondary { color: var(--accent); opacity: 0.8; }
     .cat-tab:active { transform: scale(0.96); }
     .cat-sub { display: none; }
     .cat-bar.has-sub .cat-sub { display: flex; }
@@ -363,7 +388,8 @@
     .filter-thumb img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      background: #1e1812;
     }
     .filter-thumb .thumb-placeholder {
       width: 100%;
@@ -2283,7 +2309,9 @@
       for (var i = 0; i < CATEGORY_ORDER.length; i++) {
         var key = CATEGORY_ORDER[i];
         var label = CATEGORY_LABELS[key] || '经典款 · 拍立得';
-        html += '<button class="cat-tab' + (currentCat === key ? ' active' : '') + '" data-cat="' + key + '">' + label + '</button>';
+        var parts = label.split(' · ');
+        var p1 = parts[0] || '', p2 = parts[1] || '';
+        html += '<button class="cat-tab' + (currentCat === key ? ' active' : '') + '" data-cat="' + key + '"><span class="cat-primary">' + p1 + '</span><span class="cat-secondary">' + p2 + '</span></button>';
       }
       bar.innerHTML = html;
       var tabs = bar.querySelectorAll('.cat-tab');
@@ -2348,12 +2376,16 @@
 
     // Capture a small thumbnail from the main WebGL canvas after filter render
     function capturePreviewThumbnail(filterId) {
-      if (!gl || !glSourceTex) return;
+      if (!gl || !glSourceTex || !sourceImage) return;
       try {
+        var sw = sourceImage.naturalWidth, sh = sourceImage.naturalHeight;
+        var maxW = 160, maxH = 120;
+        var ratio = Math.min(maxW / sw, maxH / sh);
+        var tw = Math.round(sw * ratio), th = Math.round(sh * ratio);
         var c = document.createElement('canvas');
-        c.width = 160; c.height = 120;
+        c.width = tw; c.height = th;
         var ctx = c.getContext('2d');
-        ctx.drawImage(els.glCanvas, 0, 0, 160, 120);
+        ctx.drawImage(els.glCanvas, 0, 0, tw, th);
         var dataUrl = c.toDataURL('image/jpeg', 0.65);
         var state = filterStates[filterId];
         if (state && dataUrl && dataUrl.length > 100) {
