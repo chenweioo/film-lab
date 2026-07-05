@@ -1,22 +1,22 @@
 <!--
-  胶片模拟 Lab — Film Simulation Filter Camera
-  ==============================================
+  胶片模拟 Lab v2.0 — Film Simulation Filter Camera
+  ==================================================
 
-  📱 如何用手机打开（不需要服务器）：
+  � 如何用手机打开（不需要服务器）：
   ───────────────────────────────────
   • Android：微信/QQ 发文件到「文件传输助手」→ 用 Chrome 打开
   • iOS：AirDrop 传到手机 → 在「文件」App 中点击 → 用 Safari 打开
   • 通用：数据线复制到 Downloads → 文件管理器打开
 
-  🎞 工作原理：
+  � 工作原理：
   ───────────
-  5 个内置胶片预设全部使用 GLSL 着色器实时计算，完全离线，
-  不依赖任何网络下载，选照片后即时生效。
+  全部 109 个胶片预设全部使用 GLSL 着色器实时计算，
+  纯离线、零网络请求、零 CDN 下载，选照片后即时生效。
 
-  如需外部 HaldCLUT：点击「+」卡片 → 从本地文件选取 PNG。
+  如需外部 HaldCLUT：点击 + 按钮 → 从本地文件选取 PNG。
   RawPedia 链接可在弹窗中找到（手动下载后导入）。
 
-  📡 无网络、100% 离线可用！
+  � 无网络、100% 离线可用！
   ──────────────────────────
 -->
 
@@ -25,14 +25,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>胶片模拟 Lab</title>
+  <title> 胶片模拟 Lab v2</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e1812">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="用数字的方式，感受银盐的温度。基于 HaldCLUT 的胶片模拟滤镜相机。--v0704-0950">
+  <meta name="description" content="用数字的方式，感受银盐的温度。基于 HaldCLUT 的胶片模拟滤镜相机。--v2">
 
   <style>
     /* ========== CSS Reset & Base ========== */
@@ -117,8 +117,8 @@
 
     /* ========== Home Page ========== */
     #page-home {
-      padding: 16px;
-      gap: 12px;
+      padding: 12px;
+      gap: 6px;
     }
 
     .home-header {
@@ -274,19 +274,10 @@
       height: 22px;
     }
 
-    /* Filter Strip */
-    .section-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      padding: 4px 4px 0;
-    }
-
     /* Category Tabs */
-    .cat-bar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 6px; flex-shrink: 0; scrollbar-width: none; }
+    .cat-bar { display: flex; gap: 5px; overflow-x: auto; padding: 0 2px 2px; flex-shrink: 0; scrollbar-width: none; }
     .cat-bar::-webkit-scrollbar { display: none; }
-    .cat-tab { flex: 0 0 auto; padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s; }
+    .cat-tab { flex: 0 0 auto; padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; color: var(--text-muted); font-size: 0.66rem; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s; }
     .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; font-weight: 600; }
     .cat-tab:active { transform: scale(0.96); }
     .cat-sub { display: none; }
@@ -294,11 +285,11 @@
 
     #filter-strip {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      padding: 4px 4px 8px;
+      padding: 0 4px 6px;
       flex-shrink: 0;
       scrollbar-width: none;
     }
@@ -923,14 +914,13 @@
 
       <!-- Category Tab Bar -->
       <div id="cat-bar" class="cat-bar"></div>
-      <!-- Status -->
-      <div id="diag" style="font-size:0.55rem;color:#c4956a;padding:2px 4px;min-height:14px;text-align:center;"></div>
 
       <!-- Filter strip -->
-      <p class="section-label">胶片滤镜 / Film Filters</p>
+      <div style="height:2px;flex-shrink:0;"></div>
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
+      <div style="text-align:center;font-size:0.58rem;color:var(--accent);opacity:0.55;padding-top:2px;font-weight:700;">  v2.0 · GPU即时渲染 · 纯离线</div>
 
     </div>
 
@@ -1041,89 +1031,139 @@
     }
 
     // ===================== CONSTANTS =====================
-    // Built-in film presets: pure GLSL, no download needed, instant.
-    // url is kept for optional manual download (available via "+" modal).
-    var FILTER_CATEGORIES = [
-      { key:'ziyan',           label:'自研 · 柯达 5207' },
-      { key:'ziyan-5219',      label:'自研 · 5219' },
-      { key:'ziyan-G200',      label:'自研 · G200' },
-      { key:'ziyan-Hgold',     label:'自研 · Hgold' },
-      { key:'ziyan-Hhassel',   label:'自研 · 哈苏' },
-      { key:'ziyan-XH5219',    label:'自研 · XH 5219' },
-      { key:'ziyan-XHG200',    label:'自研 · XH G200' },
-      { key:'classic-fuji',    label:'经典款 · 富士' },
-      { key:'classic-kodak',   label:'经典款 · 柯达' },
-      { key:'classic-ilford',  label:'经典款 · 伊尔福' },
-      { key:'classic-polaroid',label:'经典款 · 拍立得' }
+
+    // All filters are pure GPU shader (params or built-in presets). Zero network, zero CDN.
+    const FILTERS = [
+      { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, cat:'classic-fuji' },
+      { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, cat:'classic-fuji' },
+      { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, cat:'classic-kodak' },
+      { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, cat:'classic-kodak' },
+      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, cat:'classic-ilford' },
+      { id:'n5207',  name:'N 5207', isCube:true, cat:'ziyan' },
+      { id:'s15207', name:'S1 5207',isCube:true, cat:'ziyan' },
+      { id:'s25207', name:'S2 5207',isCube:true, cat:'ziyan' },
+      { id:'yplus1', name:'原色 +1',isCube:true, cat:'ziyan' },
+      { id:'yplus2', name:'原色 +2',isCube:true, cat:'ziyan' },
+      { id:'yminus1',name:'原色 -1',isCube:true, cat:'ziyan' },
+      { id:'yminus2',name:'原色 -2',isCube:true, cat:'ziyan' },
+      { id:'ysS',    name:'原色 -S',isCube:true, cat:'ziyan' },
+      { id:'bplus1', name:'标准 +1',isCube:true, cat:'ziyan' },
+      { id:'bplus2', name:'标准 +2',isCube:true, cat:'ziyan' },
+      { id:'bminus1',name:'标准 -1',isCube:true, cat:'ziyan' },
+      { id:'bminus2',name:'标准 -2',isCube:true, cat:'ziyan' },
+      { id:'bsS',    name:'标准 -S',isCube:true, cat:'ziyan' },
+      { id:'b2plus1',name:'标II +1',isCube:true, cat:'ziyan' },
+      { id:'b2plus2',name:'标II +2',isCube:true, cat:'ziyan' },
+      { id:'b2minus1',name:'标II -1',isCube:true, cat:'ziyan' },
+      { id:'b2minus2',name:'标II -2',isCube:true, cat:'ziyan' },
+      { id:'b2S',    name:'标II -S',isCube:true, cat:'ziyan' },
+      { id:'5219n',   name:'5219 中性', isCube:true, cat:'ziyan-5219' },
+      { id:'5219w',   name:'5219 暖调', isCube:true, cat:'ziyan-5219' },
+      { id:'5219c',   name:'5219 冷调', isCube:true, cat:'ziyan-5219' },
+      { id:'5219p1',  name:'5219 人像1',isCube:true, cat:'ziyan-5219' },
+      { id:'5219p2',  name:'5219 人像2',isCube:true, cat:'ziyan-5219' },
+      { id:'5219p3',  name:'5219 人像3',isCube:true, cat:'ziyan-5219' },
+      { id:'G200-1',  name:'G200 -1', isCube:true, cat:'ziyan-G200' },
+      { id:'G200-2',  name:'G200 -2', isCube:true, cat:'ziyan-G200' },
+      { id:'G200-3',  name:'G200 -3', isCube:true, cat:'ziyan-G200' },
+      { id:'G200-4',  name:'G200 -4', isCube:true, cat:'ziyan-G200' },
+      { id:'G200-5',  name:'G200 -5', isCube:true, cat:'ziyan-G200' },
+      { id:'G200-6',  name:'G200 -6', isCube:true, cat:'ziyan-G200' },
+      { id:'Hgold',   name:'Hgold 标准',isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hgoldci', name:'Hgold 冷',  isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hgoldwn', name:'Hgold 暖',  isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hgoldso', name:'Hgold 柔',  isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hgoldnc', name:'Hgold 浓',  isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hgoldpk', name:'Hgold 粉',  isCube:true, cat:'ziyan-Hgold' },
+      { id:'Hhs',     name:'哈苏 标准', isCube:true, cat:'ziyan-Hhassel' },
+      { id:'Hhsci',   name:'哈苏 冷',   isCube:true, cat:'ziyan-Hhassel' },
+      { id:'Hhswn',   name:'哈苏 暖',   isCube:true, cat:'ziyan-Hhassel' },
+      { id:'Hhsnc',   name:'哈苏 浓',   isCube:true, cat:'ziyan-Hhassel' },
+      { id:'Hhspk',   name:'哈苏 粉',   isCube:true, cat:'ziyan-Hhassel' },
+      { id:'Hhscy',   name:'哈苏 青',   isCube:true, cat:'ziyan-Hhassel' },
+      { id:'XH5219B', name:'XH 5219 B', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XH5219C', name:'XH 5219 C', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XH5219G', name:'XH 5219 G', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XH5219N', name:'XH 5219 N', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XH5219R', name:'XH 5219 R', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XH5219Y', name:'XH 5219 Y', isCube:true, cat:'ziyan-XH5219' },
+      { id:'XHG2001', name:'XH G200 1', isCube:true, cat:'ziyan-XHG200' },
+      { id:'XHG2002', name:'XH G200 2', isCube:true, cat:'ziyan-XHG200' },
+      { id:'XHG2003', name:'XH G200 3', isCube:true, cat:'ziyan-XHG200' },
+      { id:'XHG2004', name:'XH G200 4', isCube:true, cat:'ziyan-XHG200' },
+      { id:'XHG2005', name:'XH G200 5', isCube:true, cat:'ziyan-XHG200' },
+      { id:'XHG2006', name:'XH G200 6', isCube:true, cat:'ziyan-XHG200' }
     ];
 
-    const FILTERS = [
-      { id: 'provia100f',  name: '富士 Provia 100F',  preset:1, cat:'classic-fuji', url: 'https://rawpedia.rawtherapee.com/images/2/2a/Hald_CLUT_Provia_100F.png' },
-      { id: 'velvia50',    name: '富士 Velvia 50',     preset:2, cat:'classic-fuji', url: 'https://rawpedia.rawtherapee.com/images/f/f5/Hald_CLUT_Velvia_50.png' },
-      { id: 'portra160nc', name: '柯达 Portra 160 NC', preset:3, cat:'classic-kodak', url: 'https://rawpedia.rawtherapee.com/images/1/19/Hald_CLUT_Portra_160_NC.png' },
-      { id: 'ektar100',    name: '柯达 Ektar 100',     preset:4, cat:'classic-kodak', url: 'https://rawpedia.rawtherapee.com/images/d/d9/Hald_CLUT_Ektar_100.png' },
-      { id: 'hp5plus400',  name: '伊尔福 HP5 Plus 400',preset:5, cat:'classic-ilford', url: 'https://rawpedia.rawtherapee.com/images/9/9f/Hald_CLUT_Ilford_HP5_Plus_400.png' },
-      { id:'n5207',  name:'N 5207', isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/N%205207.cube' },
-      { id:'s15207', name:'S1 5207',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S1%205207.cube' },
-      { id:'s25207', name:'S2 5207',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/S2%205207.cube' },
-      { id:'yplus1', name:'原色 +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'yplus2', name:'原色 +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'yminus1',name:'原色 -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'yminus2',name:'原色 -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'ysS',    name:'原色 -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E5%8E%9F%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
-      { id:'bplus1', name:'标准 +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'bplus2', name:'标准 +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'bminus1',name:'标准 -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'bminus2',name:'标准 -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'bsS',    name:'标准 -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%87%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
-      { id:'b2plus1',name:'标II +1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B1.cube' },
-      { id:'b2plus2',name:'标II +2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20%2B2.cube' },
-      { id:'b2minus1',name:'标II -1',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-1.cube' },
-      { id:'b2minus2',name:'标II -2',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-2.cube' },
-      { id:'b2S',    name:'标II -S',isCube:true, cat:'ziyan', url:'https://cdn.jsdelivr.net/gh/chenweioo/film-lab@2af2afb/presets/%E6%A0%872%20%E6%9F%AF%E8%BE%BE5207%20-S.cube' },
-      // --- 自研 5219 系列 ---
-      { id:'5219n',   name:'5219 中性', isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_normal.cube' },
-      { id:'5219w',   name:'5219 暖调', isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_warm.cube' },
-      { id:'5219c',   name:'5219 冷调', isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_cold.cube' },
-      { id:'5219p1',  name:'5219 人像1',isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_portrait1.cube' },
-      { id:'5219p2',  name:'5219 人像2',isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_portrait2.cube' },
-      { id:'5219p3',  name:'5219 人像3',isCube:true, cat:'ziyan-5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/5219_portrait3.cube' },
-      // --- 自研 G200 系列 ---
-      { id:'G200-1',  name:'G200 -1', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-1.cube' },
-      { id:'G200-2',  name:'G200 -2', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-2.cube' },
-      { id:'G200-3',  name:'G200 -3', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-3.cube' },
-      { id:'G200-4',  name:'G200 -4', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-4.cube' },
-      { id:'G200-5',  name:'G200 -5', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-5.cube' },
-      { id:'G200-6',  name:'G200 -6', isCube:true, cat:'ziyan-G200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/G200-6.cube' },
-      // --- 自研 Hgold 系列 ---
-      { id:'Hgold',   name:'Hgold 标准',isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold.cube' },
-      { id:'Hgoldci', name:'Hgold 冷',  isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold%E5%86%B7.cube' },
-      { id:'Hgoldwn', name:'Hgold 暖',  isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold%E6%9A%96.cube' },
-      { id:'Hgoldso', name:'Hgold 柔',  isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold%E6%9F%94.cube' },
-      { id:'Hgoldnc', name:'Hgold 浓',  isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold%E6%B5%93.cube' },
-      { id:'Hgoldpk', name:'Hgold 粉',  isCube:true, cat:'ziyan-Hgold', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/Hgold%E7%B2%89.cube' },
-      // --- 自研 哈苏 系列 ---
-      { id:'Hhs',     name:'哈苏 标准', isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F.cube' },
-      { id:'Hhsci',   name:'哈苏 冷',   isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F%E5%86%B7.cube' },
-      { id:'Hhswn',   name:'哈苏 暖',   isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F%E6%9A%96.cube' },
-      { id:'Hhsnc',   name:'哈苏 浓',   isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F%E6%B5%93.cube' },
-      { id:'Hhspk',   name:'哈苏 粉',   isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F%E7%B2%89.cube' },
-      { id:'Hhscy',   name:'哈苏 青',   isCube:true, cat:'ziyan-Hhassel', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/H%E5%93%88%E8%8B%8F%E9%9D%92.cube' },
-      // --- 自研 XH 5219 系列 ---
-      { id:'XH5219B', name:'XH 5219 B', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_B.cube' },
-      { id:'XH5219C', name:'XH 5219 C', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_C.cube' },
-      { id:'XH5219G', name:'XH 5219 G', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_G.cube' },
-      { id:'XH5219N', name:'XH 5219 N', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_N.cube' },
-      { id:'XH5219R', name:'XH 5219 R', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_R.cube' },
-      { id:'XH5219Y', name:'XH 5219 Y', isCube:true, cat:'ziyan-XH5219', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_5219_Y.cube' },
-      // --- 自研 XH G200 系列 ---
-      { id:'XHG2001', name:'XH G200 1', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_1.cube' },
-      { id:'XHG2002', name:'XH G200 2', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_2.cube' },
-      { id:'XHG2003', name:'XH G200 3', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_3.cube' },
-      { id:'XHG2004', name:'XH G200 4', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_4.cube' },
-      { id:'XHG2005', name:'XH G200 5', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_5.cube' },
-      { id:'XHG2006', name:'XH G200 6', isCube:true, cat:'ziyan-XHG200', url:'https://raw.githubusercontent.com/chenweioo/film-lab/2af2afb/presets/XH_G200_6.cube' }
-    ];
+    // Embedded param presets from film-lab.json — instant GPU fallback for cube filters, zero download
+    var FILTER_PARAMS_BY_ID = {
+      // 5207 系列 — exact params from film-lab.json
+      'n5207': [0.760,0.508,0.073, 0.053,0.074,0.104, 1.04,0.89,0.42, 1.00,1.00, 0, 0,0],
+      's15207': [0.847,0.614,0.130, 0.000,0.004,0.016, 1.29,0.99,0.49, 1.00,1.00, 0, 0,0],
+      's25207': [0.755,0.572,0.091, 0.005,0.000,0.004, 1.25,0.97,0.63, 1.00,1.00, 0, 0,0],
+      'yplus1': [0.696,0.474,0.049, 0.005,0.010,0.042, 1.53,1.04,0.62, 1.00,1.00, 0, 0,0],
+      'yplus2': [0.711,0.513,0.060, 0.006,0.021,0.046, 2.00,1.26,0.81, 1.00,1.00, 0, 0,0],
+      'yminus1': [0.633,0.318,0.011, 0.054,0.078,0.110, 0.77,0.72,1.01, 1.00,1.00, 0, 0,0],
+      'yminus2': [0.515,0.237,0.016, 0.084,0.125,0.180, 0.57,0.57,2.00, 1.00,1.00, 0, 0,0],
+      'ysS': [0.708,0.384,0.023, 0.017,0.037,0.064, 0.96,0.88,1.35, 1.00,1.00, 0, 0,0],
+      'bplus1': [0.776,0.489,0.063, 0.006,0.034,0.053, 1.28,0.92,0.52, 1.00,1.00, 0, 0,0],
+      'bplus2': [0.752,0.489,0.035, 0.005,0.015,0.032, 1.24,0.95,0.62, 1.00,1.00, 0, 0,0],
+      'bminus1': [0.717,0.399,0.058, 0.015,0.048,0.069, 0.82,0.76,0.55, 1.00,1.00, 0, 0,0],
+      'bminus2': [0.619,0.320,0.032, 0.075,0.134,0.150, 0.73,0.72,0.82, 1.00,1.00, 0, 0,0],
+      'bsS': [0.772,0.474,0.041, 0.006,0.034,0.055, 1.04,0.87,0.83, 1.00,1.00, 0, 0,0],
+      'b2plus1': [0.663,0.457,-0.034, 0.055,0.030,0.047, 1.18,0.93,0.30, 1.00,1.00, 0, 0,0],
+      'b2plus2': [0.666,0.523,-0.044, 0.041,0.024,0.044, 1.35,1.10,0.49, 1.00,1.00, 0, 0,0],
+      'b2minus1': [0.603,0.374,-0.025, 0.067,0.048,0.093, 0.83,0.89,0.30, 1.00,1.00, 0, 0,0],
+      'b2minus2': [0.537,0.307,0.005, 0.088,0.073,0.108, 0.69,0.68,2.00, 1.00,1.00, 0, 0,0],
+      'b2S': [0.623,0.410,0.028, 0.034,0.011,0.035, 0.90,0.98,2.00, 1.00,1.00, 0, 0,0],
+      // 5219 series (Vision3 500T) — tungsten, slightly cool, cinematic
+      '5219n':  [1.03,0.98,0.93, 0.0,0.01,0.03, 1.0,0.98,0.94, 1.05,1.02, 0, 0,0],
+      '5219w':  [1.06,1.0,0.88, -0.01,0.0,0.03, 1.0,1.0,0.92, 1.05,1.02, 0, 0.02,0],
+      '5219c':  [1.0,0.95,0.98, 0.01,0.02,-0.01, 1.0,0.97,1.0, 1.02,1.02, 0, 0,0.02],
+      '5219p1': [0.98,0.95,0.92, 0.02,0.01,0.02, 0.97,0.95,0.94, 0.92,0.95, 0, 0.02,0],
+      '5219p2': [1.0,0.97,0.90, 0.01,0.0,0.02, 0.98,0.96,0.93, 0.90,0.93, 0, 0.03,0],
+      '5219p3': [0.97,0.94,0.93, 0.02,0.02,0.02, 0.96,0.94,0.93, 0.88,0.92, 0, 0.02,-0.01],
+      // G200 series (Gold 200) — warm, golden, progressive intensity
+      'G200-1': [1.04,1.0,0.94, -0.01,0.0,0.02, 1.0,1.0,0.96, 1.12,1.04, 0, 0.02,0],
+      'G200-2': [1.06,1.02,0.92, -0.01,0.0,0.02, 1.0,1.0,0.95, 1.15,1.06, 0, 0.03,0],
+      'G200-3': [1.08,1.03,0.90, -0.02,0.0,0.03, 1.01,1.0,0.94, 1.18,1.08, 0, 0.03,0],
+      'G200-4': [1.10,1.04,0.88, -0.02,0.0,0.03, 1.01,1.0,0.93, 1.20,1.10, 0, 0.04,0],
+      'G200-5': [1.13,1.05,0.86, -0.03,0.0,0.04, 1.02,1.0,0.92, 1.22,1.12, 0, 0.04,0],
+      'G200-6': [1.15,1.06,0.84, -0.03,0.0,0.04, 1.02,1.0,0.91, 1.25,1.14, 0, 0.05,0],
+      // Hgold series — golden warm film
+      'Hgold':   [1.06,1.02,0.95, -0.01,0.0,0.01, 1.01,1.0,0.97, 1.15,1.05, 0, 0.03,0],
+      'Hgoldci': [1.02,1.0,1.0, 0.0,0.01,-0.01, 1.0,1.0,1.0, 1.08,1.03, 0, 0,0.01],
+      'Hgoldwn': [1.08,1.03,0.90, -0.02,0.0,0.02, 1.01,1.0,0.95, 1.18,1.06, 0, 0.04,0],
+      'Hgoldso': [1.03,1.0,0.95, 0.0,0.01,0.02, 0.97,0.96,0.96, 1.05,0.95, 0, 0.02,0],
+      'Hgoldnc': [1.12,1.05,0.88, -0.03,0.0,0.03, 1.03,1.01,0.93, 1.30,1.12, 0, 0.04,0],
+      'Hgoldpk': [1.05,1.0,0.93, -0.01,0.01,0.02, 1.01,0.99,0.96, 1.10,1.03, 0, 0.03,0],
+      // Hasselblad series — natural, high fidelity, slightly desaturated
+      'Hhs':   [1.0,1.0,1.0, 0.0,0.0,0.0, 1.0,1.0,1.0, 0.92,1.02, 0, 0,0],
+      'Hhsci': [1.0,0.98,1.02, 0.0,0.01,-0.01, 1.0,0.99,1.01, 0.90,1.02, 0, 0,0.01],
+      'Hhswn': [1.02,1.0,0.97, -0.01,0.0,0.01, 1.0,1.0,0.99, 0.92,1.02, 0, 0.02,0],
+      'Hhsnc': [1.05,1.02,0.98, -0.01,0.0,0.0, 1.01,1.0,1.0, 1.08,1.06, 0, 0.01,0],
+      'Hhspk': [1.01,0.99,0.98, 0.0,0.0,0.01, 1.0,0.99,0.99, 0.95,1.0, 0, 0.02,0],
+      'Hhscy': [0.98,1.0,1.03, 0.01,0.0,-0.01, 0.99,1.0,1.01, 0.92,1.02, 0, 0,0.02],
+      // XH 5219 series — cross-processed 5219
+      'XH5219B': [1.05,0.95,0.90, -0.01,0.01,0.03, 1.02,0.98,0.92, 1.08,1.05, 0, 0.01,0.01],
+      'XH5219C': [0.95,1.0,1.05, 0.02,0.0,-0.02, 0.98,1.0,1.02, 1.02,1.04, 0, 0,0.02],
+      'XH5219G': [1.0,1.05,0.95, 0.0,-0.01,0.01, 1.0,1.02,0.99, 1.05,1.03, 0, 0,0],
+      'XH5219N': [1.0,1.0,1.0, 0.0,0.0,0.0, 1.0,1.0,1.0, 1.0,1.02, 0, 0,0],
+      'XH5219R': [1.08,0.93,0.88, -0.02,0.02,0.04, 1.03,0.97,0.91, 1.12,1.06, 0, 0.02,0],
+      'XH5219Y': [1.02,1.04,0.88, -0.01,-0.01,0.03, 1.0,1.01,0.93, 1.10,1.04, 0, 0.03,0],
+      // XH G200 series — cross-processed G200, progressive
+      'XHG2001': [1.03,1.0,0.95, -0.01,0.0,0.01, 1.0,1.0,0.98, 1.08,1.03, 0, 0.01,0],
+      'XHG2002': [1.05,1.01,0.93, -0.01,0.0,0.02, 1.01,1.0,0.97, 1.12,1.05, 0, 0.02,0],
+      'XHG2003': [1.08,1.02,0.91, -0.02,0.0,0.02, 1.02,1.0,0.96, 1.15,1.07, 0, 0.02,0],
+      'XHG2004': [1.10,1.03,0.89, -0.02,0.0,0.03, 1.02,1.0,0.95, 1.18,1.09, 0, 0.03,0],
+      'XHG2005': [1.12,1.04,0.87, -0.03,0.0,0.03, 1.03,1.0,0.94, 1.22,1.11, 0, 0.03,0],
+      'XHG2006': [1.15,1.05,0.85, -0.03,0.0,0.04, 1.03,1.0,0.93, 1.25,1.13, 0, 0.04,0]
+    };
+    // Attach params to matching FILTERS entries for instant preview + offline fallback
+    for (var _fi2 = 0; _fi2 < FILTERS.length; _fi2++) {
+      var _p = FILTER_PARAMS_BY_ID[FILTERS[_fi2].id];
+      if (_p) { FILTERS[_fi2].params = _p; FILTERS[_fi2].hasParamsFallback = true; }
+    }
 
     // Film Library — all GPU shader presets, zero download, instant
     var FILM_LIBRARY = [
@@ -1532,24 +1572,48 @@
       }, false);
       els.glCanvas.addEventListener('webglcontextrestored', () => {
         console.log('WebGL context restored');
-        // Re-upload textures and re-render
+        // Rebuild all GPU objects (context loss invalidates everything)
+        try {
+          var _vs = compileShader(gl.VERTEX_SHADER, VERTEX_SHADER);
+          var _fs = compileShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
+          var _prog = gl.createProgram();
+          gl.attachShader(_prog, _vs); gl.attachShader(_prog, _fs); gl.linkProgram(_prog);
+          glProgram = _prog;
+          glPositionBuffer = gl.createBuffer();
+          glTexCoordBuffer = gl.createBuffer();
+          var _tc = new Float32Array([0,1, 1,1, 0,0, 1,0]);
+          gl.bindBuffer(gl.ARRAY_BUFFER, glTexCoordBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, _tc, gl.STATIC_DRAW);
+          // Recreate dummy texture
+          glDummyTex = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, glDummyTex);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+            new Uint8Array([128, 128, 128, 255]));
+          // Invalidate all cached textures (they belong to the lost context)
+          glClutTex = null; gl3DLutTex = null; currentClutBlobUrl = null;
+          resizeCanvas();
+        } catch(_e) { console.warn('WebGL rebuild failed:', _e); return; }
+        // Re-upload source texture and restore current filter
         if (sourceImage) {
           setSourceTexture(sourceImage);
-          if (glClutTex) {
-            // CLUT texture might need reloading — re-trigger the current filter
-            const filt = [...FILTERS, ...customFilters].find(f => f.id === currentFilterId);
-            if (filt) {
-              if (filt.preset) {
-                render(filt.preset);
-              } else if (filt.isCustom) {
-                loadLUTImage(filt.url).then(result => {
-                  setClutTexture(result.img, result.blobUrl);
-                  render(6);
-                }).catch(() => { render(0); });
-              }
-            }
+          var _filt = [].concat(FILTERS, customFilters).find(function(_f) { return _f.id === currentFilterId; });
+          if (!_filt) { render(0); return; }
+          if (currentMode === 6 && _filt.url) {
+            // Re-load HaldCLUT from cache/network (custom external filters only)
+            loadLUTImage(_filt.url).then(function(_res) {
+              setClutTexture(_res.img, _res.blobUrl); render(6);
+            }).catch(function() { render(0); });
+          } else if (currentMode === 8) {
+            // Legacy mode 8 → fall back to params mode 7
+            var _cp = _filt.params || [1,1,1, 0,0,0, 1,1,1, 1,1, 0, 0,0];
+            currentFilter = _filt; currentFilter.params = _cp; currentMode = 7; render(7);
           } else {
-            render(0);
+            // Pure shader modes (1-5, 7) — just re-render
+            render(currentMode);
           }
         }
       }, false);
@@ -1622,11 +1686,12 @@
     let glDummyTex = null;        // 1x1 texture bound to u_clut when not in mode 6
 
     function render(mode) {
-      // mode: 0=passthrough, 1-5=builtin presets, 6=external CLUT
-      if (!gl || !glSourceTex) return;
-      if (!glProgram) return;
+      // mode: 0=passthrough, 1-5=builtin, 6=HaldCLUT, 7=params, 8=3D LUT (legacy)
+      try {
+        if (!gl || !glSourceTex) return;
+        if (!glProgram) return;
 
-      gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
+        gl.clearColor(0.118, 0.094, 0.071, 1.0); // var(--bg) #1e1812
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.useProgram(glProgram);
@@ -1693,6 +1758,8 @@
       gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.flush(); // ensure GPU command buffer is submitted for canvas reads
+      } catch(_re) { /* silently ignore render errors */ }
     }
 
     let currentClutSize = 1728.0;
@@ -2157,14 +2224,14 @@
     }
 
     var CATEGORY_ORDER = ['ziyan','ziyan-5219','ziyan-G200','ziyan-Hgold','ziyan-Hhassel','ziyan-XH5219','ziyan-XHG200','classic-fuji','classic-kodak','classic-ilford','classic-polaroid'];
+    var CATEGORY_LABELS = {'ziyan':'自研 · 柯达 5207','ziyan-5219':'自研 · 5219','ziyan-G200':'自研 · G200','ziyan-Hgold':'自研 · Hgold','ziyan-Hhassel':'自研 · 哈苏','ziyan-XH5219':'自研 · XH 5219','ziyan-XHG200':'自研 · XH G200','classic-fuji':'经典款 · 富士','classic-kodak':'经典款 · 柯达','classic-ilford':'经典款 · 伊尔福','classic-polaroid':'经典款 · 拍立得'};
     function renderCategoryTabs() {
       var bar = document.getElementById('cat-bar');
       if (!bar) return;
       var html = '';
       for (var i = 0; i < CATEGORY_ORDER.length; i++) {
         var key = CATEGORY_ORDER[i];
-        var LABEL_MAP = {'ziyan':'自研 · 柯达 5207','ziyan-5219':'自研 · 5219','ziyan-G200':'自研 · G200','ziyan-Hgold':'自研 · Hgold','ziyan-Hhassel':'自研 · 哈苏','ziyan-XH5219':'自研 · XH 5219','ziyan-XHG200':'自研 · XH G200','classic-fuji':'经典款 · 富士','classic-kodak':'经典款 · 柯达','classic-ilford':'经典款 · 伊尔福','classic-polaroid':'经典款 · 拍立得'};
-        var label = LABEL_MAP[key] || '经典款 · 拍立得';
+        var label = CATEGORY_LABELS[key] || '经典款 · 拍立得';
         html += '<button class="cat-tab' + (currentCat === key ? ' active' : '') + '" data-cat="' + key + '">' + label + '</button>';
       }
       bar.innerHTML = html;
@@ -2256,25 +2323,23 @@
 
       if (!sourceImage) { return; }
 
-      // .cube 3D LUT
+      // .cube 3D LUT — ALL cube filters render instantly via GPU params (mode 7).
+      // Pure offline: zero network, zero fetch, instant 60fps GPU shader.
       if (filter.isCube) {
-        showPreviewLoading();
-        loadCubeFromServer(filter.url).then(function(cubeD) {
-          if (!cubeD || cubeD.size < 2) throw new Error('bad');
-          // DaVinci .cube files store BGR — swap to RGB for GPU
-          for (var si = 0; si < cubeD.data.length; si += 3) {
-            var t = cubeD.data[si]; cubeD.data[si] = cubeD.data[si + 2]; cubeD.data[si + 2] = t;
-          }
-          var tex = create3DLUTTexture(cubeD);
-          set3DLUTTexture(tex.tex, tex.size);
-          currentMode = 8; render(8);
-          hidePreviewLoading();
-          setTimeout(function() { capturePreviewThumbnail(filter.id); }, 600);
-          track('apply', filter.name);
-        }).catch(function(e) {
-          hidePreviewLoading();
-          showToast('Cube失败: ' + (e.message || '').slice(0, 40));
-        });
+        var _cp = filter.params;
+        if (!_cp) { _cp = [1,1,1, 0,0,0, 1,1,1, 1,1, 0, 0,0]; filter.params = _cp; }
+        currentMode = 7; currentFilter = filter;
+        if (gl && glSourceTex) {
+          render(7);
+          // Use rAF to ensure GPU command buffer is flushed before capture
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              capturePreviewThumbnail(filter.id);
+            });
+          });
+        }
+        updateFilterCardUI(filter.id);
+        track('apply', filter.name);
         return;
       }
 
@@ -2346,7 +2411,6 @@
 
       // Render raw photo (no filter auto-selected)
       render(0);
-      diag('ready');
 
       // Clear all previous thumbnails so new ones are generated for new photo
       var allF = [].concat(FILTERS, customFilters);
@@ -2357,12 +2421,7 @@
       renderFilterCards();
 
       // Generate thumbnails ONLY for currently visible category (lazy)
-      setTimeout(function() { diag('gen:'+currentCat); generateVisibleThumbnails(); }, 400);
-    }
-
-    function diag(msg) {
-      var d = document.getElementById('diag');
-      if (d) d.textContent = msg;
+      setTimeout(function() { generateVisibleThumbnails(); }, 400);
     }
 
     function generateVisibleThumbnails() {
@@ -2379,60 +2438,79 @@
         if (!cf.cat || cf.cat === currentCat) visibleFilters.push(cf);
       }
 
+      // GPU state — captured before thumbnail generation begins
+      var _origMode = currentMode;
+      var _origFilter = currentFilter;
+      var _orig3DLutTex = gl3DLutTex;
+      var _orig3DLutSize = gl3DLutSize;
+      var _origClutTex = glClutTex;
+
+      function _restoreOriginal() {
+        gl3DLutTex = _orig3DLutTex;
+        gl3DLutSize = _orig3DLutSize;
+        glClutTex = _origClutTex;
+        currentMode = _origMode;
+        currentFilter = _origFilter;
+        if (_origMode === 8 && gl3DLutTex) { render(8); }
+        else if (_origMode === 6 && glClutTex) { render(6); }
+        else { render(_origMode); }
+        renderFilterCards();
+      }
+
       function step(idx) {
-        if (idx >= visibleFilters.length) { render(0); renderFilterCards(); return; }
+        if (idx >= visibleFilters.length) { _restoreOriginal(); return; }
         var f = visibleFilters[idx];
         var st = filterStates[f.id];
         if (!st) { filterStates[f.id] = { loaded: false, error: false, thumbDataUrl: null }; st = filterStates[f.id]; }
-        if (st.thumbDataUrl === 'done') { step(idx + 1); return; }
+        // Skip if already has a real thumbnail
+        if (st.thumbDataUrl && st.thumbDataUrl.length > 100) { step(idx + 1); return; }
 
-        if (f.preset && !f.isCustom) {
-          // Built-in: render+capture+restore in one block
-          try { render(f.preset); capturePreviewThumbnail(f.id); } catch(e) {}
-          render(0);
+        // Built-in preset (1-5) or FILM_LIBRARY param preset
+        if (f.preset && !f.isCube) {
+          try {
+            render(f.preset);
+            if (gl && gl.flush) gl.flush();
+            capturePreviewThumbnail(f.id);
+          } catch(_e) {}
           step(idx + 1);
           return;
         }
 
+        // ALL cube filters: instant GPU params thumbnail, zero network
         if (f.isCube) {
-          loadCubeFromServer(f.url).then(function(cd) {
-            if (!cd || cd.size < 2) return;
-            for (var si = 0; si < cd.data.length; si += 3) { var t = cd.data[si]; cd.data[si] = cd.data[si+2]; cd.data[si+2] = t; }
-            var tex = create3DLUTTexture(cd); set3DLUTTexture(tex.tex, tex.size);
-            var saved = currentMode; currentMode = 8; render(8);
-            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
-            renderFilterCards();
-          }).catch(function(){});
+          try {
+            var _pf = currentFilter; var _pm = currentMode;
+            var _cp = f.params || [1,1,1, 0,0,0, 1,1,1, 1,1, 0, 0,0];
+            currentFilter = f; currentFilter.params = _cp; currentMode = 7;
+            render(7);
+            if (gl && gl.flush) gl.flush();
+            capturePreviewThumbnail(f.id);
+            currentFilter = _pf; currentMode = _pm;
+          } catch(_e) {}
           step(idx + 1);
           return;
         }
 
-        // HaldCLUT
+        // HaldCLUT (external custom filters): async download
+        _pendingAsync++;
         try {
           loadLUTImage(f.url).then(function(result) {
             setClutTexture(result.img, result.blobUrl);
-            var saved = currentMode; currentMode = 6; render(6);
-            capturePreviewThumbnail(f.id); currentMode = saved; render(saved);
+            var _sm = currentMode; currentMode = 6; render(6);
+            if (gl && gl.flush) gl.flush();
+            capturePreviewThumbnail(f.id); currentMode = _sm;
+            _pendingAsync--;
+            if (_pendingAsync <= 0) _restoreOriginal();
             renderFilterCards();
-          }).catch(function(){});
-        } catch(e) {}
+          }).catch(function(){ _pendingAsync--; if (_pendingAsync <= 0) _restoreOriginal(); });
+        } catch(_e) { _pendingAsync--; }
         step(idx + 1);
       }
 
       step(0);
     }
 
-    function loadCubeFromServer(url) {
-      return fetch(url + '?v=1', { cache: 'no-store' }).then(function(resp) {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.text();
-      }).then(function(text) {
-        var cube = parseCubeFile(text);
-        if (!cube || cube.size < 2) throw new Error('Parse failed');
-        return cube;
-      });
-    }
-
+    // ===================== SAVE IMAGE =====================
     function saveImage() {
       if (!glSourceTex || !sourceImage) { showToast('请先选择照片'); return; }
       showToast('正在导出原图品质…');
@@ -2830,11 +2908,12 @@
     // ===================== PWA REGISTRATION =====================
     function registerPWA() {
       // Manifest-only — no Service Worker (SW caused persistent caching bugs)
+      var baseUrl = location.href.split('?')[0].split('#')[0];
       var manifest = {
         name: '胶片模拟 Lab',
         short_name: '胶片Lab',
         description: '用数字的方式，感受银盐的温度',
-        start_url: location.href.split('?')[0].split('#')[0],
+        start_url: baseUrl + '?v=105',
         display: 'standalone',
         background_color: '#1e1812',
         theme_color: '#1e1812',
@@ -2870,8 +2949,20 @@
     // ===================== INIT =====================
     // ===================== DIRECT BOOT =====================
     // Synchronous start — safari-test.html architecture
+
+    // Version watermark injected by JS — visible proof of loaded version
+    try {
+      var _vEl = document.createElement('div');
+      _vEl.id = '_ver';
+      _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
+      _vEl.textContent = '  v2.0 | GPU即时渲染 | 纯离线';
+      var _homePage = document.getElementById('page-home');
+      if (_homePage) _homePage.appendChild(_vEl);
+      document.title = '🎞 胶片模拟 Lab v2';
+    } catch(_ignore) {}
+
     resizeCanvas();
-    try { initWebGL(); diag('GL ok'); } catch(e) { diag('GL fail'); }
+    try { initWebGL(); } catch(e) {}
     try { initThumbGL(); } catch(e) {}
     try { clearCanvas(); } catch(e) {}
 
@@ -2890,7 +2981,7 @@
     try { renderFilterCards(); } catch(e) {}
     try { renderCategoryTabs(); } catch(e) {}
 
-    // PWA manifest only — no Service Worker
+    // PWA manifest — cache-busted start_url
     try { registerPWA(); } catch(e) {}
 
     // Async: DB + custom filters (non-blocking)
