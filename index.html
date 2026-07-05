@@ -25,7 +25,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Film Lab v3.0</title>
+  <title>Film Lab</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e1812">
@@ -55,7 +55,7 @@
       --border: #3a2a18;
       --shadow: 0 4px 24px rgba(0,0,0,0.5);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --nav-height: 52px;
+      --nav-height: 48px;
       --radius: 12px;
       --radius-sm: 8px;
     }
@@ -906,7 +906,6 @@
       <div id="filter-strip">
         <!-- Cards injected by JS -->
       </div>
-      <div style="text-align:center;font-size:0.6rem;color:var(--accent);opacity:0.7;padding-top:1px;font-weight:700;">Film Lab v3.0</div>
 
     </div>
 
@@ -3010,18 +3009,7 @@
 
     // ===================== INIT =====================
     // ===================== DIRECT BOOT =====================
-    // Synchronous start — safari-test.html architecture
-
-    // Version watermark injected by JS — visible proof of loaded version
-    try {
-      var _vEl = document.createElement('div');
-      _vEl.id = '_ver';
-      _vEl.style.cssText = 'text-align:center;font-size:0.58rem;color:#c4956a;opacity:0.45;padding:0 0 2px;letter-spacing:0.04em;';
-      _vEl.textContent = 'Film Lab v3.0';
-      var _homePage = document.getElementById('page-home');
-      if (_homePage) _homePage.appendChild(_vEl);
-      document.title = '🎞 胶片模拟 Lab v2.3';
-    } catch(_ignore) {}
+    // Synchronous start
 
     resizeCanvas();
     try { initWebGL(); } catch(e) {}
