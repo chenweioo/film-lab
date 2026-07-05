@@ -275,33 +275,30 @@
     }
 
     /* Category Tabs */
-    // Category Tabs — two-line: primary / secondary
+    // Category Tabs — two-line text inside each pill, tabs in a single scrollable row
     .cat-bar { display: flex; gap: 5px; overflow-x: auto; padding: 0 2px 4px; flex-shrink: 0; scrollbar-width: none; }
     .cat-bar::-webkit-scrollbar { display: none; }
     .cat-tab {
       flex: 0 0 auto;
-      padding: 6px 12px;
+      padding: 6px 10px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
       color: var(--text-muted);
-      font-size: 0.62rem;
-      white-space: nowrap;
       cursor: pointer;
-      letter-spacing: 0.03em;
       transition: all 0.15s;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      line-height: 1.3;
-      gap: 1px;
-      min-height: 40px;
+      line-height: 1.35;
+      gap: 0;
+      min-height: 42px;
     }
-    .cat-tab .cat-primary { font-size: 0.64rem; font-weight: 500; color: var(--text); }
-    .cat-tab .cat-secondary { font-size: 0.56rem; opacity: 0.7; }
-    .cat-tab.active { border-color: var(--accent); color: var(--accent); background: #2a1a10; }
-    .cat-tab.active .cat-primary { color: var(--accent); font-weight: 700; }
+    .cat-tab .cat-primary { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; }
+    .cat-tab .cat-secondary { font-size: 0.55rem; opacity: 0.65; letter-spacing: 0.03em; }
+    .cat-tab.active { border-color: var(--accent); background: #2a1a10; }
+    .cat-tab.active .cat-primary { color: var(--accent); }
     .cat-tab.active .cat-secondary { color: var(--accent); opacity: 0.8; }
     .cat-tab:active { transform: scale(0.96); }
     .cat-sub { display: none; }
