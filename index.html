@@ -2369,16 +2369,29 @@
 
     // ===================== CORE ACTIONS =====================
 
-    // Capture thumbnail: copy WebGL canvas at native resolution, CSS object-fit:cover handles display
+    // Capture thumbnail: temporarily fill canvas → no black bars in captured image
     function capturePreviewThumbnail(filterId) {
-      if (!gl || !glSourceTex || !sourceImage) return;
+      if (!gl || !glSourceTex || !sourceImage || !glQuadVerts) return;
       try {
+        var _sv = new Float32Array(glQuadVerts);
+        var _sm = currentMode;
+        // Fill entire canvas (stretch if needed) for clean thumbnail without letterbox
+        glQuadVerts[0]=-1;glQuadVerts[1]=-1;glQuadVerts[2]=1;glQuadVerts[3]=-1;
+        glQuadVerts[4]=-1;glQuadVerts[5]=1;glQuadVerts[6]=1;glQuadVerts[7]=1;
+        render(_sm);
+        gl.flush();
+        // Capture at moderate resolution
+        var tw = Math.min(els.glCanvas.width, 200);
+        var th = Math.round(tw * els.glCanvas.height / els.glCanvas.width);
         var c = document.createElement('canvas');
-        c.width = els.glCanvas.width;
-        c.height = els.glCanvas.height;
+        c.width = tw; c.height = th;
         var ctx = c.getContext('2d');
-        ctx.drawImage(els.glCanvas, 0, 0);
-        var dataUrl = c.toDataURL('image/jpeg', 0.6);
+        ctx.drawImage(els.glCanvas, 0, 0, tw, th);
+        var dataUrl = c.toDataURL('image/jpeg', 0.7);
+        // Restore contain quads
+        glQuadVerts[0]=_sv[0];glQuadVerts[1]=_sv[1];glQuadVerts[2]=_sv[2];glQuadVerts[3]=_sv[3];
+        glQuadVerts[4]=_sv[4];glQuadVerts[5]=_sv[5];glQuadVerts[6]=_sv[6];glQuadVerts[7]=_sv[7];
+        render(_sm);
         var state = filterStates[filterId];
         if (state && dataUrl && dataUrl.length > 100) {
           state.thumbDataUrl = dataUrl;
