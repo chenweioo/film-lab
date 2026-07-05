@@ -2370,19 +2370,18 @@
 
     // ===================== CORE ACTIONS =====================
 
-    // Capture a small thumbnail from the main WebGL canvas after filter render
+    // Capture thumbnail at WebGL canvas native resolution, then CSS object-fit:contain handles display
     function capturePreviewThumbnail(filterId) {
       if (!gl || !glSourceTex || !sourceImage) return;
       try {
-        var sw = sourceImage.naturalWidth, sh = sourceImage.naturalHeight;
-        var maxW = 160, maxH = 120;
-        var ratio = Math.min(maxW / sw, maxH / sh);
-        var tw = Math.round(sw * ratio), th = Math.round(sh * ratio);
         var c = document.createElement('canvas');
-        c.width = tw; c.height = th;
+        c.width = els.glCanvas.width;
+        c.height = els.glCanvas.height;
         var ctx = c.getContext('2d');
-        ctx.drawImage(els.glCanvas, 0, 0, tw, th);
-        var dataUrl = c.toDataURL('image/jpeg', 0.65);
+        ctx.fillStyle = '#1e1812';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(els.glCanvas, 0, 0);
+        var dataUrl = c.toDataURL('image/jpeg', 0.7);
         var state = filterStates[filterId];
         if (state && dataUrl && dataUrl.length > 100) {
           state.thumbDataUrl = dataUrl;
