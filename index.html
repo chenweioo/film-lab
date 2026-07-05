@@ -276,11 +276,12 @@
 
     /* Category Tabs */
     // Category Tabs — two-line text inside each pill, tabs in a single scrollable row
-    .cat-bar { display: flex; gap: 5px; overflow-x: auto; padding: 0 2px 4px; flex-shrink: 0; scrollbar-width: none; }
+    .cat-bar { display: flex; flex-wrap: nowrap; gap: 5px; overflow-x: auto; padding: 0 2px 4px; flex-shrink: 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .cat-bar::-webkit-scrollbar { display: none; }
     .cat-tab {
       flex: 0 0 auto;
-      padding: 6px 10px;
+      min-width: 52px;
+      padding: 6px 8px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -292,8 +293,6 @@
       align-items: center;
       justify-content: center;
       line-height: 1.35;
-      gap: 0;
-      min-height: 42px;
     }
     .cat-tab .cat-primary { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; }
     .cat-tab .cat-secondary { font-size: 0.55rem; opacity: 0.65; letter-spacing: 0.03em; }
