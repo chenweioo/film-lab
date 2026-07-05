@@ -188,7 +188,7 @@
       return '其他';
     }
 
-    var API = '/api/stats';
+    var API = 'https://film-sim-lab.netlify.app/api/stats';
     var currentDays = 7;
     var customStart = null, customEnd = null;
 
@@ -229,7 +229,10 @@
 
     async function fetchStats() {
       try {
-        var resp = await fetch(API);
+        var ctrl = new AbortController();
+        var timer = setTimeout(function(){ ctrl.abort(); }, 10000);
+        var resp = await fetch(API, { signal: ctrl.signal, mode: 'cors' });
+        clearTimeout(timer);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var s = await resp.json();
         if (!s || s.total === 0) { showEmpty(); return; }
@@ -300,7 +303,9 @@
         setEl('updated','更新于 ' + new Date().toLocaleTimeString('zh-CN'));
       } catch(e) {
         console.error(e);
-        setEl('updated','加载失败 · ' + (e.message||''));
+        setHtml('top10','<div class="empty">Netlify API 暂不可用<br><span style="font-size:0.6rem;opacity:0.6">配额恢复后自动加载</span></div>');
+        showEmpty();
+        setEl('updated','API 不可用 · ' + new Date().toLocaleTimeString('zh-CN'));
       }
     }
 
