@@ -1018,11 +1018,22 @@
   </div>
 
   <script>
-    // Kill all stale Service Workers immediately
+    // Service Worker — network-first cache for stable offline loading
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
-      });
+      var SW_VERSION = 'v3.1';
+      navigator.serviceWorker.register('/film-lab/sw.js', { scope: '/film-lab/', updateViaCache: 'none' }).then(function(reg) {
+        // Poll for updates every 30 minutes
+        setInterval(function() { try { reg.update(); } catch(e) {} }, 1800000);
+        reg.addEventListener('updatefound', function() {
+          var newSW = reg.installing;
+          if (!newSW) return;
+          newSW.addEventListener('statechange', function() {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              try { document.getElementById('_swclr').style.display = 'block'; document.getElementById('_swclr').textContent = SW_VERSION + ' · 有新版本，刷新页面更新'; } catch(e) {}
+            }
+          });
+        });
+      }).catch(function() { /* SW failed, app still works */ });
     }
     if (!HTMLCanvasElement.prototype.toBlob) {
       HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
