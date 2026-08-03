@@ -1481,23 +1481,7 @@
         return clamp(c, 0.0, 1.0);
       }
 
-      // ---- sRGB ↔ Linear conversion (matches Lightroom/DaVinci internal pipeline) ----
-      float srgbToLinear(float c) {
-        if (c <= 0.04045) return c / 12.92;
-        return pow((c + 0.055) / 1.055, 2.4);
-      }
-      vec3 srgbToLinear(vec3 c) {
-        return vec3(srgbToLinear(c.r), srgbToLinear(c.g), srgbToLinear(c.b));
-      }
-      float linearToSrgb(float c) {
-        if (c <= 0.0031308) return c * 12.92;
-        return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
-      }
-      vec3 linearToSrgb(vec3 c) {
-        return vec3(linearToSrgb(c.r), linearToSrgb(c.g), linearToSrgb(c.b));
-      }
-
-      // Trilinear 3D LUT from 2D texture (mode 8) — operates in LINEAR space
+      // Trilinear 3D LUT from 2D texture (mode 8)
       vec3 sample3DLUT(vec3 rgb) {
         float N = u_lut3dSize;
         float rI = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
@@ -1520,10 +1504,16 @@
           vec3 filtered = sampleClut(color.rgb);
           gl_FragColor = vec4(filtered, color.a);
         } else if (mode == 8) {
-          // Lightroom pipeline: sRGB(source) → linear → 3D LUT → sRGB(display)
-          vec3 linear = srgbToLinear(color.rgb);
-          vec3 filtered = sample3DLUT(linear);
-          gl_FragColor = vec4(linearToSrgb(filtered), color.a);
+          // Lightroom pipeline: sRGB → linear → 3D LUT → sRGB
+          vec3 lin;
+          lin.r = color.r <= 0.04045 ? color.r / 12.92 : pow((color.r + 0.055) / 1.055, 2.4);
+          lin.g = color.g <= 0.04045 ? color.g / 12.92 : pow((color.g + 0.055) / 1.055, 2.4);
+          lin.b = color.b <= 0.04045 ? color.b / 12.92 : pow((color.b + 0.055) / 1.055, 2.4);
+          vec3 filtered = sample3DLUT(lin);
+          filtered.r = filtered.r <= 0.0031308 ? filtered.r * 12.92 : 1.055 * pow(filtered.r, 0.4166667) - 0.055;
+          filtered.g = filtered.g <= 0.0031308 ? filtered.g * 12.92 : 1.055 * pow(filtered.g, 0.4166667) - 0.055;
+          filtered.b = filtered.b <= 0.0031308 ? filtered.b * 12.92 : 1.055 * pow(filtered.b, 0.4166667) - 0.055;
+          gl_FragColor = vec4(filtered, color.a);
         } else if (mode >= 7) {
           vec3 filtered = applyParamPreset(color.rgb, v_texCoord);
           gl_FragColor = vec4(filtered, color.a);

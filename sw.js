@@ -1,6 +1,6 @@
 // Film Lab v3.1 Service Worker — Stale-while-revalidate + Offline Cache
 // Works around GitHub Pages intermittent connection resets in China
-var CACHE_NAME = 'film-lab-v3.1';
+var CACHE_NAME = 'film-lab-v3.2';
 
 // ===== Install: precache shell, but DON'T fail if network is down =====
 self.addEventListener('install', function(event) {
