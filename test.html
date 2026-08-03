@@ -1498,6 +1498,17 @@
       }
 
       // Trilinear 3D LUT from 2D texture (mode 8) — operates in LINEAR space
+      vec3 sample3DLUT(vec3 rgb) {
+        float N = u_lut3dSize;
+        float rI = clamp(rgb.r * (N - 1.0), 0.0, N - 1.0001);
+        float gI = clamp(rgb.g * (N - 1.0), 0.0, N - 1.0001);
+        float bI = clamp(rgb.b * (N - 1.0), 0.0, N - 1.0001);
+        float r0 = floor(rI), fracR = rI - r0;
+        float x = (bI + 0.5) / N;
+        float y0 = (r0 * N + gI + 0.5) / (N * N);
+        float y1 = ((r0 + 1.0) * N + gI + 0.5) / (N * N);
+        return mix(texture2D(u_lut3d, vec2(x, y0)).rgb, texture2D(u_lut3d, vec2(x, y1)).rgb, fracR);
+      }
 
       void main() {
         vec4 color = texture2D(u_source, v_texCoord);
